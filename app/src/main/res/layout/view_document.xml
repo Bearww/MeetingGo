@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/nameLabelTextView"
+                style="@style/DocumentLabelTextView"
+                android:text="@string/doc_label_name" />
+            <TextView
+                android:id="@+id/nameTextView"
+                android:textColor="@color/accent_material_dark" />
+        </TableRow>
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/linkLabelTextView"
+                style="@style/DocumentLabelTextView"
+                android:text="@string/link_label_name" />
+            <TextView
+                android:id="@+id/linkTextView"
+                android:textColor="@color/accent_material_dark" />
+        </TableRow>
+
+    </TableLayout>
+</LinearLayout>

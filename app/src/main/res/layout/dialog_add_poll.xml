@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:id="@+id/pollTitle"
+        android:background="@color/black_10"
+        android:inputType="textCapSentences"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:gravity="center"
+        android:hint="@string/poll_title"
+        android:maxLines="1"
+        android:maxLength="30"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:textColorHint="@color/black_50"
+        android:textColor="@color/black_95" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/scrollView"
+        android:background="@color/transparent"
+        android:clipToPadding="false"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp" >
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/pollBody"
+            android:background="@color/transparent"
+            android:inputType="textCapSentences|textImeMultiLine|textMultiLine"
+            android:gravity="start|end"
+            android:ems="10"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:hint="@string/poll_body"
+            android:maxLines="2000"
+            android:textSize="18sp"
+            android:textColorHint="@color/black_50"
+            android:textColor="@color/black_95" />
+
+    </ScrollView>
+</LinearLayout>
+<!--
+<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/pollViewFlipper"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentStart="true">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/selectLayout">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select poll type:"
+            android:id="@+id/pollTypeTextView"
+            />
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/multiChoiceButton"
+            android:layout_below="@+id/pollTypeTextView"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignRight="@+id/multiChoiceTextView"
+            android:layout_alignEnd="@+id/multiChoiceTextView" />
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/openTextButton"
+            android:layout_below="@+id/pollTypeTextView"
+            android:layout_alignRight="@+id/openTextTextView"
+            android:layout_alignEnd="@+id/openTextTextView"
+            android:layout_alignLeft="@+id/openTextTextView"
+            android:layout_alignStart="@+id/openTextTextView" />
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/ratingButton"
+            android:layout_alignTop="@+id/openTextButton"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignLeft="@+id/ratingTextView"
+            android:layout_alignStart="@+id/ratingTextView" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Multiple Choice"
+            android:id="@+id/multiChoiceTextView"
+            android:layout_below="@+id/multiChoiceButton"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Open text"
+            android:id="@+id/openTextTextView"
+            android:layout_below="@+id/openTextButton"
+            android:layout_centerHorizontal="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Rating"
+            android:id="@+id/ratingTextView"
+            android:layout_below="@+id/ratingButton"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/pollLayout">
+
+        <Spinner
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/pollSpinner1" />
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Type your question"
+            android:id="@+id/pollQuestionText1"
+            android:layout_below="@+id/pollSpinner1"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" />
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Add option"
+            android:id="@+id/defaultOptionText"
+            android:layout_below="@+id/pollQuestionText1"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:width="256dp" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add"
+            android:id="@+id/addOptionButton"
+            android:layout_below="@+id/pollQuestionText1"
+            android:layout_toRightOf="@+id/defaultOptionText"
+            android:layout_toEndOf="@+id/defaultOptionText" />
+
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enable multiple choose"
+            android:id="@+id/checkMultiChoose"
+            android:layout_below="@+id/addOptionButton"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_toStartOf="@+id/addOptionButton"
+            android:layout_toLeftOf="@+id/addOptionButton" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Max choose"
+            android:id="@+id/maxChooseTextView"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignBottom="@+id/chooseNumText"
+            android:layout_alignTop="@+id/chooseNumText"
+            android:singleLine="true" />
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="phone"
+            android:ems="10"
+            android:id="@+id/chooseNumText"
+            android:layout_below="@+id/checkMultiChoose"
+            android:layout_toRightOf="@+id/maxChooseTextView"
+            android:width="50dp" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/openTextLayout">
+
+        <Spinner
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/pollSpinner2" />
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Type your question"
+            android:id="@+id/pollQuestionText2"
+            android:layout_below="@+id/pollSpinner2"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" />
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="textMultiLine"
+            android:ems="10"
+            android:id="@+id/openText"
+            android:layout_below="@+id/pollQuestionText2"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true" />
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <Spinner
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/pollSpinner3" />
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Type your question"
+            android:id="@+id/pollQuestionText3"
+            android:layout_below="@+id/pollSpinner3"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" />
+
+        <RatingBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/ratingBar"
+            android:layout_below="@+id/pollQuestionText3"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:numStars="10" />
+    </RelativeLayout>
+</ViewFlipper>
+-->

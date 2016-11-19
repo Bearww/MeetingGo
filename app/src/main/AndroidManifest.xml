@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.nuk.meetinggo">
+
+    <!-- To auto-complete the email text field in the login form with the user's emails -->
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_PROFILE" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
+        <activity
+            android:name=".LoginActivity"
+            android:label="@string/title_activity_login"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".MenuActivity"
+            android:label="@string/title_activity_menu"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".RemoteActivity"
+            android:label="@string/title_activity_remote"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".MeetingActivity"
+            android:configChanges="orientation|screenSize"
+            android:label="@string/title_item_list"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".AddDocument"
+            android:label=""
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ViewDocumentFragment"
+            android:label=""
+            android:theme="@style/AppTheme" />
+
+        <!-- Test Activity -->
+        <!--
+                <activity
+                    android:name=".MainFragment"
+                    android:label="@string/app_name"
+                    android:configChanges="orientation|screenSize"
+                    android:theme="@style/AppTheme" >
+                </activity>
+
+                <activity
+                    android:name=".EditNoteFragment"
+                    android:label="@string/title_edit_notes_activity"
+                    android:configChanges="orientation|screenSize"
+                    android:theme="@style/AppTheme"
+                    android:parentActivityName=".MainFragment" >
+                    <meta-data
+                        android:name="android.support.PARENT_ACTIVITY"
+                        android:value=".MainFragment" />
+
+                </activity>
+        -->
+        <activity
+            android:name=".CreateMeetingActivity"
+            android:label="建立會議"
+            android:theme="@style/AppTheme" />
+        <activity android:name=".GroupActivity"
+            android:label="建立會議"
+            android:theme="@style/AppTheme" />
+    </application>
+
+</manifest>

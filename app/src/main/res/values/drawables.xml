@@ -1,0 +1,16 @@
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <item name="ic_menu_camera" type="drawable">@android:drawable/ic_menu_camera</item>
+    <item name="ic_menu_gallery" type="drawable">@android:drawable/ic_menu_gallery</item>
+    <item name="ic_menu_slideshow" type="drawable">@android:drawable/ic_menu_slideshow</item>
+    <item name="ic_menu_manage" type="drawable">@android:drawable/ic_menu_manage</item>
+    <item name="ic_menu_share" type="drawable">@android:drawable/ic_menu_share</item>
+    <item name="ic_menu_send" type="drawable">@android:drawable/ic_menu_send</item>
+
+    <item name="textview_border" type="drawable">
+        <shape android:shape="rectangle">
+            <corners android:radius="5dp" />
+            <stroke android:width="1dp" android:color="#555555" />
+            <padding android:top="10dp" android:left="10dp" android:bottom="10dp" android:right="10dp" />
+        </shape>
+    </item>
+</resources>

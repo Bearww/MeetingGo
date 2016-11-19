@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/relativeLayout"
+    android:orientation="vertical"
+    android:focusableInTouchMode="false"
+    android:descendantFocusability="blocksDescendants"
+    android:background="@drawable/rounded_card" >
+
+    <CheckedTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/member_name"
+        android:id="@+id/nameView"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginRight="40dp"
+        android:textStyle="bold"
+        android:textSize="25sp"
+        android:maxLines="1"
+        android:textColor="@color/black_95"
+        android:paddingBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/member_id"
+        android:id="@+id/idView"
+        android:layout_below="@+id/nameView"
+        android:layout_alignLeft="@+id/nameView"
+        android:layout_alignStart="@+id/nameView"
+        android:layout_alignRight="@+id/nameView"
+        android:layout_alignEnd="@+id/nameView"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:maxLines="5"
+        android:textColor="@color/black_95"
+        android:paddingBottom="8dp" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:orientation="horizontal"
+        android:id="@+id/controlLayout" >
+
+        <ImageButton
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:id="@+id/controllerButton"
+            android:background="@color/transparent"
+            android:contentDescription="切換主控"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_phonelink_setup_black_24dp"
+            android:layout_marginRight="5sp" />
+
+        <ImageButton
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:id="@+id/chairmanButton"
+            android:background="@color/transparent"
+            android:contentDescription="切換主席"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_local_library_black_24dp"
+            android:layout_marginRight="5sp" />
+
+        <ImageButton
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:id="@+id/presenterButton"
+            android:background="@color/transparent"
+            android:contentDescription="切換簡報者"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_ondemand_video_black_24dp"
+            android:layout_marginRight="10sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:orientation="horizontal"
+        android:id="@+id/memberLayout" >
+
+        <ImageView
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:id="@+id/controllerMark"
+            android:background="@color/transparent"
+            android:contentDescription="主控"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_phonelink_setup_black_24dp"
+            android:layout_marginRight="5sp" />
+
+        <ImageView
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:id="@+id/chairmanMark"
+            android:background="@color/transparent"
+            android:contentDescription="主席"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_local_library_black_24dp"
+            android:layout_marginRight="5sp" />
+
+        <ImageView
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:id="@+id/presenterMark"
+            android:background="@color/transparent"
+            android:contentDescription="簡報者"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_ondemand_video_black_24dp"
+            android:layout_marginRight="10sp" />
+    </LinearLayout>
+
+</RelativeLayout>

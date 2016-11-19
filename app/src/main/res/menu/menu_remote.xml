@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <group android:checkableBehavior="single">
+        <item android:id="@+id/action_receiver" android:title="computer"
+            android:icon="@drawable/ic_phonelink_black_24dp" app:showAsAction="always" />
+        <item android:id="@+id/action_transmitter" android:title="phone"
+            android:icon="@drawable/ic_developer_mode_black_24dp" app:showAsAction="always" />
+    </group>
+<!--
+    <item android:id="@+id/action_before" android:title="@string/action_before"
+        android:icon="@drawable/ic_navigate_before_black_24dp" app:showAsAction="always" />
+
+    <item android:id="@+id/action_next" android:title="@string/action_next"
+        android:icon="@drawable/ic_navigate_next_black_24dp" app:showAsAction="always" />
+
+    <group android:checkableBehavior="single">
+
+        <item android:id="@+id/action_cursor" android:title="@string/action_cursor"
+            android:icon="@drawable/ic_call_made_black_24dp" app:showAsAction="always" />
+
+        <item android:id="@+id/action_brush" android:title="@string/action_brush"
+            android:icon="@drawable/ic_brush_black_24dp" app:showAsAction="always" />
+
+        <item android:id="@+id/action_eraser" android:title="@string/action_eraser"
+            android:icon="@drawable/ic_clear_black_24dp" app:showAsAction="always" />
+
+    </group>
+-->
+<!--
+    <item android:id="@+id/action_connect" android:title="@string/action_connect"
+        android:icon="@drawable/ic_menu_share" app:showAsAction="ifRoom" />
+
+    <item android:id="@+id/action_settings" android:title="@string/action_settings"
+        android:orderInCategory="100" app:showAsAction="never" />
+-->
+</menu>
