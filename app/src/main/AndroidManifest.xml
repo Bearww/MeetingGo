@@ -43,10 +43,6 @@
             android:name=".AddDocument"
             android:label=""
             android:theme="@style/AppTheme" />
-        <activity
-            android:name=".ViewDocumentFragment"
-            android:label=""
-            android:theme="@style/AppTheme" />
 
         <!-- Test Activity -->
         <!--
@@ -73,9 +69,17 @@
             android:name=".CreateMeetingActivity"
             android:label="建立會議"
             android:theme="@style/AppTheme" />
-        <activity android:name=".GroupActivity"
+        <activity
+            android:name=".GroupActivity"
             android:label="建立會議"
             android:theme="@style/AppTheme" />
+        <activity android:name=".MainActivity"
+            android:label="建立會議"
+            android:theme="@style/AppTheme" />
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
     </application>
 
 </manifest>

@@ -49,11 +49,5 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:src="@drawable/abc_ic_menu_selectall_mtrl_alpha"/>
-
-        <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:src="@drawable/abc_ic_menu_moreoverflow_mtrl_alpha"/>
     </LinearLayout>
 </RelativeLayout>

@@ -108,6 +108,15 @@ public class MenuActivity extends AppCompatActivity
             // TODO read from local json/sql
             Log.i("[MA]", "No cloud data");
         }
+Log.i("[MA]", "test");
+        Button test = (Button) findViewById(R.id.testButton);
+        test.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MenuActivity.this, MainActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     @Override

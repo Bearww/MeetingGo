@@ -53,4 +53,13 @@
         android:layout_alignTop="@+id/editText"
         android:layout_toRightOf="@+id/editText"
         android:layout_toEndOf="@+id/editText" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Button"
+        android:id="@+id/testButton"
+        android:layout_below="@+id/joinButton"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
 </RelativeLayout>

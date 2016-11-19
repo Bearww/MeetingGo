@@ -163,7 +163,7 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
         toolbar.setTitle("");
 
         // Set a 'Back' navigation icon in the Toolbar and handle the click
-        toolbar.setNavigationIcon(R.drawable.abc_ic_ab_back_mtrl_am_alpha);
+        toolbar.setNavigationIcon(R.drawable.ic_search_black_24dp);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
