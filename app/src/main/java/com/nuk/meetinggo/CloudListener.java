@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -12,6 +11,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -28,21 +29,31 @@ public class CloudListener implements Runnable {
 
     private Handler mHandler;
     private Fragment mFragment;
-    private FragmentManager mManager;
     private DetachableResultReceiver mReceiver;
 
     public static String mUrl = "";
 
-    public static Boolean activityStopped = false;
+    public Boolean listenStop = false;
+
+    public Boolean listenTopic = false;
 
     private int requestsPerSecond = 2;
 
     private JSONObject newObject, oldObject;
 
-    public CloudListener(Handler handler, FragmentManager manager) {
+    private Map<String, String> form;
+
+    public CloudListener(Handler handler) {
         mHandler = handler;
-        mManager = manager;
         mReceiver = new DetachableResultReceiver(mHandler);
+    }
+
+    public void setTopic(int id) {
+        listenTopic = true;
+
+        form = new HashMap<>();
+
+        form.put("topic_id", String.valueOf(id));
     }
 
     public void run() {
@@ -56,12 +67,17 @@ public class CloudListener implements Runnable {
         @Override
         public void run() {
 
-            if (activityStopped)
+            if (listenStop)
                 return;
             try {
                 if (!TextUtils.isEmpty(mUrl)) {
                     Log.i("[CL]" + mFragment.toString(), "Request:" + mUrl);
-                    newObject = LinkCloud.request(mUrl);
+                    if (listenTopic)
+                        newObject = LinkCloud.getJSON(LinkCloud.submitFormPost(form, mUrl));
+
+                    else
+                        newObject = LinkCloud.request(mUrl);
+
                     if (newObject == null) {
                         Log.i("[CL]" + mFragment.toString(), "Link error: " + mUrl);
                         return;
@@ -118,15 +134,22 @@ public class CloudListener implements Runnable {
     private void changeLink() {
         if (mFragment instanceof MainFragment)
             mUrl = GET_MEETING_TOPIC;
-        if (mFragment instanceof MemberFragment)
+        else if (mFragment instanceof MemberFragment)
             mUrl = GET_MEETING_MEMBER;
-        if (mFragment instanceof DocumentFragment)
+        else if (mFragment instanceof DocumentFragment)
             mUrl = GET_MEETING_DOCUMENT;
-        if (mFragment instanceof QuestionFragment)
+        else if (mFragment instanceof QuestionFragment)
             mUrl = GET_MEETING_QUESTION;
-        if (mFragment instanceof PollFragment)
+        else if (mFragment instanceof PollFragment)
             mUrl = GET_MEETING_POLL;
-        if (mFragment instanceof RecordFragment)
+        else if (mFragment instanceof RecordFragment)
             mUrl = GET_MEETING_RECORD;
+        else
+            mUrl = "";
+
+        if (mFragment instanceof RemoteControlFragment)
+            listenStop = true;
+        else
+            listenStop = false;
     }
 }

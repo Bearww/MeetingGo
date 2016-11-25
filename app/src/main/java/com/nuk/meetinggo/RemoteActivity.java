@@ -3,17 +3,25 @@ package com.nuk.meetinggo;
 import android.content.pm.ActivityInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
+import static com.nuk.meetinggo.MeetingInfo.topicID;
+
 public class RemoteActivity extends ActionBarActivity {
+
+    private CloudListener mListener;
+    private Thread mThread;
 
     private static Toolbar toolbar;
     private static TabLayout tabLayout;
+    private Fragment currentFragment = null;
 
     private static float tabLayoutBaseYCoordinate; // Base Y coordinate of tab layout
 
@@ -50,6 +58,7 @@ public class RemoteActivity extends ActionBarActivity {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 viewPager.setCurrentItem(tab.getPosition());
+                mListener.fragmentChanged(adapter.getItem(tab.getPosition()));
             }
 
             @Override
@@ -62,6 +71,38 @@ public class RemoteActivity extends ActionBarActivity {
 
             }
         });
+        currentFragment = adapter.getItem(0);
+
+        mListener = new CloudListener(new Handler());
+
+        Log.i("[RA]" + topicID, "Start cloud listening thread");
+        mListener.setTopic(topicID);
+        mListener.fragmentChanged(currentFragment);
+
+        mThread = new Thread(mListener);
+        mThread.start();
+    }
+
+    @Override
+    protected void onPause() {
+        mListener.listenStop = true;
+
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        mListener.listenStop = false;
+
+        super.onResume();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (mThread != null)
+            mThread.interrupt();
     }
 
     /**

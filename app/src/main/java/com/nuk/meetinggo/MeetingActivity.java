@@ -63,7 +63,7 @@ public class MeetingActivity extends AppCompatActivity {
 
     private static Toolbar toolbar;
     private static TabLayout tabLayout;
-    Fragment currentFragment = null;
+    private Fragment currentFragment = null;
 
     private static float tabLayoutBaseYCoordinate; // Base Y coordinate of tab layout
 
@@ -144,7 +144,7 @@ public class MeetingActivity extends AppCompatActivity {
             Log.i("[MA]", "No cloud data");
         }
 
-        mListener = new CloudListener(new Handler(), getSupportFragmentManager());
+        mListener = new CloudListener(new Handler());
 
         linkTask = new LinkCloudTask(GET_MEETING_INFO);
         linkTask.execute((Void) null);
@@ -152,14 +152,14 @@ public class MeetingActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        CloudListener.activityStopped = true;
+        mListener.listenStop = true;
 
         super.onPause();
     }
 
     @Override
     protected void onResume() {
-        CloudListener.activityStopped = false;
+        mListener.listenStop = false;
 
         super.onResume();
     }

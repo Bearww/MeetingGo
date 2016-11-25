@@ -7,6 +7,12 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 public class RemoteAdapter extends FragmentStatePagerAdapter {
     int mNumOfTabs;
 
+    RemoteControlFragment tab1;
+    DocumentFragment tab2;
+    QuestionFragment tab3;
+    PollFragment tab4;
+    RecordFragment tab5;
+
     public RemoteAdapter(FragmentManager fm, int NumOfTabs) {
         super(fm);
         this.mNumOfTabs = NumOfTabs;
@@ -17,19 +23,20 @@ public class RemoteAdapter extends FragmentStatePagerAdapter {
 
         switch (position) {
             case 0:
-                RemoteControlFragment tab1 = new RemoteControlFragment();
+                tab1 = new RemoteControlFragment();
                 return tab1;
             case 1:
-                DocumentFragment tab2 = new DocumentFragment();
+                tab2 = new DocumentFragment();
                 return tab2;
             case 2:
-                QuestionFragment tab3 = new QuestionFragment();
+                tab3 = new QuestionFragment();
                 return tab3;
             case 3:
-                PollFragment tab4 = new PollFragment();
+                tab4 = new PollFragment();
                 return tab4;
             case 4:
-                RecordFragment tab5 = new RecordFragment();
+                tab5 = new RecordFragment();
+                return tab5;
             default:
                 return null;
         }

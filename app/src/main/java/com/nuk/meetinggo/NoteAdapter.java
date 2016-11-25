@@ -25,12 +25,14 @@ import static com.nuk.meetinggo.DataUtils.NOTE_COLOUR;
 import static com.nuk.meetinggo.DataUtils.NOTE_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.NOTE_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.NOTE_HIDE_BODY;
+import static com.nuk.meetinggo.DataUtils.NOTE_ID;
 import static com.nuk.meetinggo.DataUtils.NOTE_TITLE;
 import static com.nuk.meetinggo.MainFragment.checkedArray;
 import static com.nuk.meetinggo.MainFragment.deleteActive;
 import static com.nuk.meetinggo.MainFragment.searchActive;
 import static com.nuk.meetinggo.MainFragment.setFavourite;
 import static com.nuk.meetinggo.MeetingInfo.getControlable;
+import static com.nuk.meetinggo.MeetingInfo.topicID;
 
 /**
  * Adapter class for custom notes ListView
@@ -97,6 +99,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
 
         if (noteObject != null) {
             // If noteObject not empty -> initialize variables
+            int id = 0;
             String title = context.getString(R.string.note_title);
             String body = context.getString(R.string.note_body);
             String colour = String.valueOf(context.getResources().getColor(R.color.white));
@@ -107,6 +110,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
 
             try {
                 // Get noteObject data and store in variables
+                id = noteObject.getInt(NOTE_ID);
                 title = noteObject.getString(NOTE_TITLE);
                 body = noteObject.getString(NOTE_BODY);
                 colour = noteObject.getString(NOTE_COLOUR);
@@ -188,10 +192,12 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
                 }
             });
 
+            final int finalID = id;
             control.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Intent intent = new Intent(context, RemoteActivity.class);
+                    topicID = finalID;
                     context.startActivity(intent);
                 }
             });
