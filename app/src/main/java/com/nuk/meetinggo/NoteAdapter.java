@@ -31,7 +31,7 @@ import static com.nuk.meetinggo.MainFragment.checkedArray;
 import static com.nuk.meetinggo.MainFragment.deleteActive;
 import static com.nuk.meetinggo.MainFragment.searchActive;
 import static com.nuk.meetinggo.MainFragment.setFavourite;
-import static com.nuk.meetinggo.MeetingInfo.getControlable;
+import static com.nuk.meetinggo.MeetingInfo.getControllable;
 import static com.nuk.meetinggo.MeetingInfo.topicID;
 
 /**
@@ -122,7 +122,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
                     hideBody = noteObject.getBoolean(NOTE_HIDE_BODY);
 
                 favoured = noteObject.getBoolean(NOTE_FAVOURED);
-                controlled = getControlable(MemberInfo.memberID);
+                controlled = getControllable(MemberInfo.memberID);
 
             } catch (JSONException e) {
                 e.printStackTrace();

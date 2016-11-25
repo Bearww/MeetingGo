@@ -27,8 +27,7 @@ import org.json.JSONObject;
 import static com.nuk.meetinggo.DataUtils.MEMBER_COLOUR;
 import static com.nuk.meetinggo.DataUtils.MEMBER_ID;
 import static com.nuk.meetinggo.DataUtils.MEMBER_NAME;
-import static com.nuk.meetinggo.MeetingInfo.getControlable;
-import static com.nuk.meetinggo.MeetingInfo.isChairman;
+import static com.nuk.meetinggo.MeetingInfo.getControllable;
 import static com.nuk.meetinggo.MeetingInfo.isController;
 import static com.nuk.meetinggo.MeetingInfo.isPresenter;
 import static com.nuk.meetinggo.MemberFragment.checkedArray;
@@ -96,10 +95,10 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
         TextView idView = (TextView) convertView.findViewById(R.id.idView);
         CheckedTextView nameView = (CheckedTextView) convertView.findViewById(R.id.nameView);
         ImageView controllerMark = (ImageView) convertView.findViewById(R.id.controllerMark);
-        ImageView chairmanMark = (ImageView) convertView.findViewById(R.id.chairmanMark);
+        //ImageView chairmanMark = (ImageView) convertView.findViewById(R.id.chairmanMark);
         ImageView presenterMark = (ImageView) convertView.findViewById(R.id.presenterMark);
         ImageButton controllerButton = (ImageButton) convertView.findViewById(R.id.controllerButton);
-        ImageButton chairmanButton = (ImageButton) convertView.findViewById(R.id.chairmanButton);
+        //ImageButton chairmanButton = (ImageButton) convertView.findViewById(R.id.chairmanButton);
         ImageButton presenterButton = (ImageButton) convertView.findViewById(R.id.presenterButton);
 
         // Get Member object at position
@@ -136,9 +135,8 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                     if (isController(MemberInfo.memberID)) controllerButton.setVisibility(View.VISIBLE);
                     else controllerButton.setVisibility(View.GONE);
 
-                    // TODO remove chairman
-                    if (isChairman(MemberInfo.memberID)) chairmanButton.setVisibility(View.VISIBLE);
-                    else chairmanButton.setVisibility(View.GONE);
+                    //if (isChairman(MemberInfo.memberID)) chairmanButton.setVisibility(View.VISIBLE);
+                    //else chairmanButton.setVisibility(View.GONE);
 
                     if (isPresenter(MemberInfo.memberID)) presenterButton.setVisibility(View.VISIBLE);
                     else presenterButton.setVisibility(View.GONE);
@@ -150,8 +148,8 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                     if (isController(id)) controllerMark.setVisibility(View.VISIBLE);
                     else controllerMark.setVisibility(View.GONE);
 
-                    if (isChairman(id)) chairmanMark.setVisibility(View.VISIBLE);
-                    else chairmanMark.setVisibility(View.GONE);
+                    //if (isChairman(id)) chairmanMark.setVisibility(View.VISIBLE);
+                    //else chairmanMark.setVisibility(View.GONE);
 
                     if (isPresenter(id)) presenterMark.setVisibility(View.VISIBLE);
                     else presenterMark.setVisibility(View.GONE);
@@ -196,7 +194,7 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                                         // Set controller to member
                                         MeetingInfo.controller = finalId;
 
-                                        if (!getControlable(MemberInfo.memberID))
+                                        if (!getControllable(MemberInfo.memberID))
                                             controlViewVisibility(false);
                                         else
                                             controlViewVisibility(true);
@@ -212,7 +210,7 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                     }
                 }
             });
-
+/*
             chairmanButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -241,7 +239,7 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                     }
                 }
             });
-
+*/
             presenterButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -253,7 +251,7 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                                     public void onClick(DialogInterface dialog, int which) {
                                         // Set controller to member
                                         MeetingInfo.presenter = finalId;
-                                        if (!getControlable(MemberInfo.memberID))
+                                        if (!getControllable(MemberInfo.memberID))
                                             controlViewVisibility(false);
                                         else
                                             controlViewVisibility(true);

@@ -57,7 +57,7 @@
             android:scaleType="fitXY"
             android:src="@drawable/ic_phonelink_setup_black_24dp"
             android:layout_marginRight="5sp" />
-
+<!--
         <ImageButton
             android:layout_width="35dp"
             android:layout_height="35dp"
@@ -67,7 +67,7 @@
             android:scaleType="fitXY"
             android:src="@drawable/ic_local_library_black_24dp"
             android:layout_marginRight="5sp" />
-
+-->
         <ImageButton
             android:layout_width="35dp"
             android:layout_height="35dp"
@@ -96,7 +96,7 @@
             android:scaleType="fitXY"
             android:src="@drawable/ic_phonelink_setup_black_24dp"
             android:layout_marginRight="5sp" />
-
+<!--
         <ImageView
             android:layout_width="35dp"
             android:layout_height="35dp"
@@ -106,7 +106,7 @@
             android:scaleType="fitXY"
             android:src="@drawable/ic_local_library_black_24dp"
             android:layout_marginRight="5sp" />
-
+-->
         <ImageView
             android:layout_width="35dp"
             android:layout_height="35dp"

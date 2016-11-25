@@ -87,7 +87,7 @@ public class MeetingActivity extends AppCompatActivity {
         topicID = 0;
         MeetingInfo.controller = MemberInfo.memberID;
         MeetingInfo.presenter = MemberInfo.memberID;
-        MeetingInfo.chairman = MemberInfo.memberID;
+        //MeetingInfo.chairman = MemberInfo.memberID;
 
         setContentView(R.layout.activity_meeting);
         toolbar = (Toolbar) findViewById(R.id.toolbar);

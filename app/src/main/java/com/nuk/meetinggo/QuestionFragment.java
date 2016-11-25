@@ -50,6 +50,7 @@ import static com.nuk.meetinggo.DataUtils.QUESTION_ID;
 import static com.nuk.meetinggo.DataUtils.QUESTION_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.QUESTION_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.QUESTION_TITLE;
+import static com.nuk.meetinggo.DataUtils.QUESTION_TOPIC;
 import static com.nuk.meetinggo.DataUtils.deleteQuestions;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
@@ -741,6 +742,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
         private final String CONTENT_TITLE = "head_question";
         private final String CONTENT_ANSWER = "answer";
         private final String CONTENT_ID = "question_id";
+        private final String CONTENT_TOPIC = "topic_id";
 
         LinkCloudTask(int request, int result, Bundle data) {
             requestCode = request;
@@ -768,6 +770,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         JSONArray title = null;
                         JSONArray answer = null;
                         JSONArray id = null;
+                        JSONArray topic = null;
                         if (object.has(CONTENT_TITLE))
                             title = object.getJSONArray(CONTENT_TITLE);
                         else
@@ -783,15 +786,20 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         else
                             Log.i("[QF]", "Fail to fetch field " + CONTENT_ANSWER);
 
-                        if (title != null && id != null && answer != null) {
+                        if (object.has(CONTENT_TOPIC))
+                            topic = object.getJSONArray(CONTENT_TOPIC);
+                        else
+                            Log.i("[QF]", "Fail to fetch field " + CONTENT_TOPIC);
+
+                        if (title != null && id != null && answer != null && topic != null) {
                             if (title.length() == id.length()) {
                                 // Update questions, check question id is either existed or not
                                 // Yes -> update data, no -> add new question
                                 for(int i = 0; i < id.length(); i++) {
                                     int position = -1;
                                     for(int j = 0; j < questions.length(); j++) {
-                                        if(questions.getJSONObject(j).has(QUESTION_ID)
-                                                && id.getString(i).equals(questions.getJSONObject(j).getString(QUESTION_ID))) {
+                                        if(id.getString(i).equals(questions.getJSONObject(j).getString(QUESTION_ID))
+                                                && topic.getString(i).equals(questions.getJSONObject(j).getString(QUESTION_TOPIC))) {
                                             position = j;
                                             break;
                                         }
@@ -807,6 +815,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                                         // TODO add body
                                         question.put(QUESTION_ID, id.getString(i));
                                         question.put(QUESTION_TITLE, title.getString(i));
+                                        question.put(QUESTION_TOPIC, topic.getInt(i));
                                         question.put(QUESTION_BODY, "");
                                         question.put(QUESTION_COLOUR, "#FFFFFF");
                                         question.put(QUESTION_FAVOURED, false);

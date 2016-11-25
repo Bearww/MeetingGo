@@ -58,7 +58,7 @@ import static com.nuk.meetinggo.DataUtils.isExternalStorageWritable;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
 import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
-import static com.nuk.meetinggo.MeetingInfo.getControlable;
+import static com.nuk.meetinggo.MeetingInfo.getControllable;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 
 public class MainFragment extends Fragment implements AdapterView.OnItemClickListener,
@@ -147,7 +147,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         if (toolbar != null)
             initToolbar();
 
-        if (getControlable(MemberInfo.memberID))
+        if (getControllable(MemberInfo.memberID))
             newNote.setVisibility(View.VISIBLE);
         else
             newNote.setVisibility(View.GONE);
@@ -509,7 +509,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         }
 */
         // Get control
-        Boolean controlable = getControlable(MemberInfo.memberID);
+        Boolean controlable = getControllable(MemberInfo.memberID);
 
         // Create fragment and give it an argument
         EditNoteFragment editFragment = null;
@@ -966,6 +966,30 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         }
     }
 
+    /**
+     * Get note's title by id
+     * @param id of note
+     */
+    public static String getTitle(int id) {
+
+        // Loop through main notes list
+        for (int i = 0; i < notes.length(); i++) {
+            JSONObject note = null;
+
+            // Get note at position i
+            try {
+                note = notes.getJSONObject(i);
+
+                if (note != null) {
+                    if (note.getString(NOTE_ID).equals(String.valueOf(id)))
+                        return note.getString(NOTE_TITLE);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
 
     /**
      * If back button pressed while search is active -> collapse view and end search mode
@@ -1139,7 +1163,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                                         note = new JSONObject();
 
                                         // TODO add body
-                                        note.put(NOTE_ID, id.getString(i));
+                                        note.put(NOTE_ID, id.getInt(i));
                                         note.put(NOTE_TITLE, title.getString(i));
                                         note.put(NOTE_BODY, "");
                                         note.put(NOTE_COLOUR, "#FFFFFF");

@@ -24,6 +24,7 @@ import static com.nuk.meetinggo.DataUtils.QUESTION_COLOUR;
 import static com.nuk.meetinggo.DataUtils.QUESTION_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.QUESTION_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.QUESTION_TITLE;
+import static com.nuk.meetinggo.DataUtils.QUESTION_TOPIC;
 import static com.nuk.meetinggo.QuestionFragment.checkedArray;
 import static com.nuk.meetinggo.QuestionFragment.deleteActive;
 import static com.nuk.meetinggo.QuestionFragment.searchActive;
@@ -95,6 +96,7 @@ public class QuestionAdapter extends BaseAdapter implements ListAdapter {
             // If questionObject not empty -> initialize variables
             String title = context.getString(R.string.question_title);
             String body = context.getString(R.string.question_body);
+            int topic = 0;
             String colour = "#FFFFFF";
             int fontSize = 18;
             Boolean favoured = false;
@@ -102,6 +104,7 @@ public class QuestionAdapter extends BaseAdapter implements ListAdapter {
             try {
                 // Get questionObject data and store in variables
                 title = questionObject.getString(QUESTION_TITLE);
+                topic = questionObject.getInt(QUESTION_TOPIC);
                 body = questionObject.getString(QUESTION_BODY);
                 colour = questionObject.getString(QUESTION_COLOUR);
 

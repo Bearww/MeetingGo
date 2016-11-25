@@ -103,6 +103,7 @@ public class DataUtils {
     public static final int NEW_QUESTION_REQUEST = 100000;
     public static final String QUESTION_REQUEST_CODE = "requestCode";
     public static final String QUESTION_ID = "id";
+    public static final String QUESTION_TOPIC = "topic";
     public static final String QUESTION_TITLE = "title";
     public static final String QUESTION_BODY = "body";
     public static final String QUESTION_COLOUR = "colour";

@@ -28,7 +28,7 @@ import static com.nuk.meetinggo.DataUtils.POLL_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.POLL_HIDE_BODY;
 import static com.nuk.meetinggo.DataUtils.POLL_TITLE;
 import static com.nuk.meetinggo.DataUtils.POLL_ENABLED;
-import static com.nuk.meetinggo.MeetingInfo.getControlable;
+import static com.nuk.meetinggo.MeetingInfo.getControllable;
 import static com.nuk.meetinggo.PollFragment.checkedArray;
 import static com.nuk.meetinggo.PollFragment.deleteActive;
 import static com.nuk.meetinggo.PollFragment.searchActive;
@@ -114,7 +114,7 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
             Boolean enabled = false;
 
             try {
-                controlled = getControlable(MemberInfo.memberID);
+                controlled = getControllable(MemberInfo.memberID);
 
                 // Get pollObject data and store in variables
                 title = pollObject.getString(POLL_TITLE);

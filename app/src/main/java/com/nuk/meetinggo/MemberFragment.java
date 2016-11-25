@@ -45,7 +45,7 @@ import static com.nuk.meetinggo.DataUtils.deleteMembers;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
 import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
-import static com.nuk.meetinggo.MeetingInfo.getControlable;
+import static com.nuk.meetinggo.MeetingInfo.getControllable;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 
 public class MemberFragment extends Fragment implements AdapterView.OnItemClickListener,
@@ -230,7 +230,7 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
             menuEnableControl = menu.findItem(R.id.action_control);
 
             // TODO not work
-            if(getControlable(MemberInfo.memberID))
+            if(getControllable(MemberInfo.memberID))
                 menuEnableControl.setVisible(true);
             else
                 menuEnableControl.setVisible(false);
