@@ -108,10 +108,7 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
                     cancel = true;
                 }
 
-                if(cancel) {
-
-                }
-                else {
+                if(!cancel) {
                     // TODO change to CLOUD_CREATE, if yang's link work
                     // Link to create meeting
                     linkTask = new LinkCloudTask("", CLOUD_SEND);
@@ -153,12 +150,12 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
         // Get cloud link
         Intent intent = getIntent();
         if(intent != null) {
-            String link = intent.getStringExtra(Constants.TAG_LINK);
-            linkTask = new LinkCloudTask(link, CLOUD_REQUEST);
+            String linkData = intent.getStringExtra(Constants.TAG_LINK_DATA);
+            linkTask = new LinkCloudTask(linkData, CLOUD_REQUEST);
             linkTask.execute((Void) null);
         }
         else
-            Log.i("[CMA]", "No link");
+            Log.i("[CMA]", "No link data");
     }
 
     /**
@@ -172,11 +169,11 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
         private Boolean mLinkSuccess;
         private String mLinkData;
 
-        LinkCloudTask(String link, int requestCode) {
-            mLink = link;
+        LinkCloudTask(String linkData, int requestCode) {
+            mLink = "";
+            mLinkData = linkData;
             mRequestCode = requestCode;
             mLinkSuccess = false;
-            mLinkData = "";
         }
 
         @Override
@@ -184,15 +181,17 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
             // TODO: attempt authentication against a network service.
             try {
                 if(mRequestCode == CLOUD_REQUEST) {
-                    Log.i("[CMA]Request", "Create form " + mLink);
-                    JSONObject object = LinkCloud.request(mLink);
+                    Log.i("[CMA]Request", "Create form " + mLinkData);
+                    JSONObject object = LinkCloud.request(LinkCloud.filterLink(mLinkData));
+
+                    // Simulate network access.
+                    Thread.sleep(2000);
+
                     createForm = LinkCloud.getForm(object);
 
                     for(String key : createForm.keySet())
                         Log.i("[CMA]Request form", key);
 
-                    // Simulate network access.
-                    Thread.sleep(2000);
                     return true;
                 }
                 else if(mRequestCode == CLOUD_CREATE) {
@@ -230,6 +229,7 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
                     Map<String, String> form = new HashMap<>();
                     form.put(MEETING_NAME, meetingName);
                     form.put(MEETING_TIME, meetingDate + " " + meetingTime);
+                    form.put("moderator_id", MemberInfo.memberID);
 
                     // TODO add field to sql
                     //if(enableTime)
@@ -237,35 +237,18 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
                     //else
                     //    form.put("inform_time", "none");
 
-                    mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_MEETING);
+                    mLink = LinkCloud.submitFormPost(form, createForm.get("post_link0"));
                     if (mLinkSuccess = LinkCloud.hasData())
                         return true;
-
-                    // TODO change to yang's link if work
-/*
-                    if(createForm.containsKey("post_link1")) {
-                        // Link back to menu, need find new meeting link to enter meeting
-                        mLinkData = LinkCloud.submitFormPost(form, createForm.get("post_link1"));
-                        if (mLinkSuccess = LinkCloud.hasData())
-                            return true;
-                    }
-
-                    else
-                        Log.i("[CMA]Send Form", "Not contain key value");
-*/
-                    return false;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                return false;
             } catch (JSONException e) {
                 e.printStackTrace();
-                return false;
             } catch (IOException e) {
                 e.printStackTrace();
-                return false;
             }
-            return true;
+            return false;
         }
 
         @Override
@@ -296,7 +279,7 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
 
                     Log.i("[CMA]", "Send to Cloud " + (mLinkSuccess ? "Success" : "Fail"));
                     intent.putExtra(Constants.TAG_CONNECTION, mLinkSuccess);
-                    intent.putExtra(Constants.TAG_LINK_DATA, mLinkData);
+                    intent.putExtra(Constants.TAG_LINK, mLink);
 
                     startActivity(intent);
                 }

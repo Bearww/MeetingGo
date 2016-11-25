@@ -34,6 +34,7 @@ import org.json.JSONObject;
 import static com.nuk.meetinggo.ColorPicker.ColorPickerSwatch.OnColorSelectedListener;
 import static com.nuk.meetinggo.DataUtils.ANSWER_ARRAY;
 import static com.nuk.meetinggo.DataUtils.ANSWER_CONTENT;
+import static com.nuk.meetinggo.DataUtils.ANSWER_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.ANSWER_OWNER;
 import static com.nuk.meetinggo.DataUtils.NEW_QUESTION_REQUEST;
 import static com.nuk.meetinggo.DataUtils.QUESTION_BODY;
@@ -42,7 +43,6 @@ import static com.nuk.meetinggo.DataUtils.QUESTION_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.QUESTION_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.QUESTION_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.QUESTION_TITLE;
-import static com.nuk.meetinggo.RemoteActivity.tabLayoutVisibility;
 
 public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItemClickListener, IOnFocusListenable {
 
@@ -101,7 +101,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
         // Init answers array
         answers = new JSONArray();
 
-        tabLayoutVisibility(false);
+        //tabLayoutVisibility(false);
     }
 
     @Override
@@ -363,6 +363,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
         changes.putString(QUESTION_BODY, bodyText.getText().toString());
         changes.putString(QUESTION_COLOUR, colour);
         changes.putInt(QUESTION_FONT_SIZE, fontSize);
+        changes.putString(ANSWER_ARRAY, answers.toString());
 
         //getActivity().setResult(Activity.RESULT_OK, intent);
         receiver.onReceiveResult(bundle.getInt(QUESTION_REQUEST_CODE), Activity.RESULT_OK, changes);
@@ -379,21 +380,22 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
      * Back or navigation '<-' pressed
      */
     public void onBackPressed() {
-        // New note -> show 'Save changes?' dialog
+        // New question -> show 'Save changes?' dialog
         if (bundle.getInt(QUESTION_REQUEST_CODE) == NEW_QUESTION_REQUEST)
             saveChangesDialog.show();
 
-            // Existing note
+            // Existing question
         else {
             /*
-             * If title is not empty -> Check if note changed
+             * If title is not empty -> Check if question changed
              *  If yes -> saveChanges
              *  If not -> hide keyboard if showing and finish
              */
             if (!(titleText.getText().toString().equals(bundle.getString(QUESTION_TITLE))) ||
                     !(bodyText.getText().toString().equals(bundle.getString(QUESTION_BODY))) ||
                     !(colour.equals(bundle.getString(QUESTION_COLOUR))) ||
-                    fontSize != bundle.getInt(QUESTION_FONT_SIZE)) {
+                    fontSize != bundle.getInt(QUESTION_FONT_SIZE) ||
+                    !(answers.toString().equals(bundle.getString(ANSWER_ARRAY)))) {
 
                 saveChanges();
             }
@@ -437,6 +439,98 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
             saveChangesDialog.dismiss();
 
         super.onConfigurationChanged(newConfig);
+    }
+
+    /**
+     * Favourite or un-favourite the answer at position
+     * @param context application context
+     * @param favourite true to favourite, false to un-favourite
+     * @param position position of answer
+     */
+    public static void setFavourite(Context context, boolean favourite, int position) {
+        JSONObject newFavourite = null;
+
+        // Get answer at position and store in newFavourite
+        try {
+            newFavourite = answers.getJSONObject(position);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        if (newFavourite != null) {
+            if (favourite) {
+                // Set favoured to true
+                try {
+                    newFavourite.put(ANSWER_FAVOURED, true);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                // If favoured answer is not at position 0
+                // Sort answers array so favoured answer is first
+                if (position > 0) {
+                    JSONArray newArray = new JSONArray();
+
+                    try {
+                        newArray.put(0, newFavourite);
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                    // Copy contents to new sorted array without favoured element
+                    for (int i = 0; i < answers.length(); i++) {
+                        if (i != position) {
+                            try {
+                                newArray.put(answers.get(i));
+
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    // Equal main answers array with new sorted array and reset adapter
+                    answers = newArray;
+                    adapter = new AnswerAdapter(context, answers);
+                    listView.setAdapter(adapter);
+
+                    // Smooth scroll to top
+                    listView.post(new Runnable() {
+                        public void run() {
+                            listView.smoothScrollToPosition(0);
+                        }
+                    });
+                }
+
+                // If favoured answer was first -> just update object in answers array and notify adapter
+                else {
+                    try {
+                        answers.put(position, newFavourite);
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                    adapter.notifyDataSetChanged();
+                }
+            }
+
+            // If answer not favourite -> set favoured to false and notify adapter
+            else {
+                try {
+                    newFavourite.put(ANSWER_FAVOURED, false);
+                    answers.put(position, newFavourite);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                adapter.notifyDataSetChanged();
+            }
+        }
     }
 
     public class LinkCloudTask extends AsyncTask<Void, Void, Boolean> {

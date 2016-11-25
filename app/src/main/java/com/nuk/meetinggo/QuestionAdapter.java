@@ -24,10 +24,10 @@ import static com.nuk.meetinggo.DataUtils.QUESTION_COLOUR;
 import static com.nuk.meetinggo.DataUtils.QUESTION_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.QUESTION_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.QUESTION_TITLE;
-import static com.nuk.meetinggo.MainFragment.checkedArray;
-import static com.nuk.meetinggo.MainFragment.deleteActive;
-import static com.nuk.meetinggo.MainFragment.searchActive;
-import static com.nuk.meetinggo.MainFragment.setFavourite;
+import static com.nuk.meetinggo.QuestionFragment.checkedArray;
+import static com.nuk.meetinggo.QuestionFragment.deleteActive;
+import static com.nuk.meetinggo.QuestionFragment.searchActive;
+import static com.nuk.meetinggo.QuestionFragment.setFavourite;
 
 /**
  * Adapter class for custom questions ListView
@@ -95,7 +95,7 @@ public class QuestionAdapter extends BaseAdapter implements ListAdapter {
             // If questionObject not empty -> initialize variables
             String title = context.getString(R.string.question_title);
             String body = context.getString(R.string.question_body);
-            String colour = String.valueOf(context.getResources().getColor(R.color.white));
+            String colour = "#FFFFFF";
             int fontSize = 18;
             Boolean favoured = false;
 

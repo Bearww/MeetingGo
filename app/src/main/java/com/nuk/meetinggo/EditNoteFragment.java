@@ -6,9 +6,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -25,15 +27,25 @@ import android.widget.Toast;
 
 import com.nuk.meetinggo.ColorPicker.ColorPickerDialog;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.nuk.meetinggo.ColorPicker.ColorPickerSwatch.OnColorSelectedListener;
 import static com.nuk.meetinggo.DataUtils.NEW_NOTE_REQUEST;
 import static com.nuk.meetinggo.DataUtils.NOTE_BODY;
 import static com.nuk.meetinggo.DataUtils.NOTE_COLOUR;
 import static com.nuk.meetinggo.DataUtils.NOTE_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.NOTE_HIDE_BODY;
+import static com.nuk.meetinggo.DataUtils.NOTE_ID;
 import static com.nuk.meetinggo.DataUtils.NOTE_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.NOTE_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.NOTE_TITLE;
+import static com.nuk.meetinggo.MeetingInfo.CONTENT_TOPIC_ID;
+import static com.nuk.meetinggo.MeetingInfo.GET_TOPIC_BODY;
 
 public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClickListener, IOnFocusListenable {
 
@@ -53,12 +65,15 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
     private String[] fontSizeNameArr; // Font size names string array
 
     // Defaults
+    private String noteID = ""; // empty id default
     private String colour = "#FFFFFF"; // white default
     private int fontSize = 18; // Medium default
     private Boolean hideBody = false;
 
     private AlertDialog fontDialog, saveChangesDialog;
     private ColorPickerDialog colorPickerDialog;
+
+    private LinkCloudTask linkTask;
 
 
     @Override
@@ -127,6 +142,7 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
                 colour = bundle.getString(NOTE_COLOUR);
                 fontSize = bundle.getInt(NOTE_FONT_SIZE);
                 hideBody = bundle.getBoolean(NOTE_HIDE_BODY);
+                noteID = bundle.getString(NOTE_ID);
 
                 titleEdit.setText(bundle.getString(NOTE_TITLE));
                 bodyEdit.setText(bundle.getString(NOTE_BODY));
@@ -134,6 +150,10 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
 
                 if (hideBody)
                     menuHideBody.setTitle(R.string.action_show_body);
+
+                // Get note body
+                linkTask = new LinkCloudTask(noteID);
+                linkTask.execute();
             }
 
             // If current note is new -> request keyboard focus to note title and show keyboard
@@ -147,7 +167,7 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
 
             // Get receiver
             receiver = bundle.getParcelable(NOTE_RECEIVER);
-            Log.i("[EF]", "receiver setting" + receiver.toString());
+            Log.i("[ENF]", "receiver setting" + receiver.toString());
         }
 
         initDialogs(getContext());
@@ -456,5 +476,76 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
             saveChangesDialog.dismiss();
 
         super.onConfigurationChanged(newConfig);
+    }
+
+    /**
+     * Represents an asynchronous link cloud task used to request/send data
+     */
+    public class LinkCloudTask extends AsyncTask<Void, Void, Boolean> {
+
+        String mID = "";
+        String mLink = "";
+        String mInfo = "";
+
+        LinkCloudTask(String id) {
+            if (!TextUtils.isEmpty(id)) {
+                mID = id;
+                mLink = GET_TOPIC_BODY;
+            }
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+
+            if (!TextUtils.isEmpty(mLink)) {
+                Map<String, String> form = new HashMap<>();
+
+                form.put(CONTENT_TOPIC_ID, mID);
+
+                try {
+                    Log.i("[ENF]", "Link note body " + mLink);
+                    mInfo = LinkCloud.submitFormPost(form, mLink);
+
+                    Log.i("[ENF]", "info " + mInfo);
+                    JSONObject object = LinkCloud.getContent(LinkCloud.getJSON(mInfo));
+                    Log.i("[ENF]", "object " + object.toString());
+
+                    object = object.getJSONObject("obj_content");
+                    Log.i("[ENF]", "object " + object.toString());
+                    mInfo = object.getString("head_content");
+                    Log.i("[ENF]", "info " + mInfo);
+
+                    if (!TextUtils.isEmpty(mInfo))
+                        return true;
+                    else
+                        Log.i("[ENF]", "Fail to get note body");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            else
+                Log.i("[ENF]", "Fail to get topic body link " + mID);
+
+            return false;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            linkTask = null;
+
+            if (success) {
+                Log.i("[ENF]", "success link note body");
+                // If note body update -> change body text
+                if (!bodyEdit.getText().toString().equals(mInfo))
+                    bodyEdit.setText(mInfo);
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            linkTask = null;
+        }
     }
 }

@@ -353,7 +353,7 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
                 out.println("exit"); //tell server to exit
                 socket.close(); //close socket
             } catch (IOException e) {
-                Log.e("remotedroid", "Error in closing socket", e);
+                Log.e("remotecontrol", "Error in closing socket", e);
             }
         }
     }

@@ -18,6 +18,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -168,12 +169,21 @@ public class MenuActivity extends AppCompatActivity
 
         Intent intent = new Intent(this, CreateMeetingActivity.class);
 
-        // Put link to get create meeting info
-        String link = meetingInfo.get(LINK_CREATE_MEETING);
-        Log.i("[MA]", "Next link " + link);
-        intent.putExtra(Constants.TAG_LINK, link);
+        Bundle bundle = getIntent().getExtras();
+        if(bundle != null) {
+            Boolean connectCloud = bundle.getBoolean(Constants.TAG_CONNECTION);
 
-        startActivity(intent);
+            if(connectCloud) {
+                Log.i("[MA]", "Loading cloud data");
+                intent.putExtra(Constants.TAG_LINK_DATA, bundle.getString(Constants.TAG_LINK_DATA));
+                startActivity(intent);
+            }
+            else
+                Log.i("[MA]", "Can't link cloud");
+        }
+        else
+            Log.i("[MA]", "No cloud data");
+
     }
 
     private void attemptJoin() {
@@ -217,8 +227,8 @@ public class MenuActivity extends AppCompatActivity
 
         private final String mMeetingID;
 
-        private Boolean mLinkSuccess;
-        private String mLinkData;
+        private Boolean mLinkSuccess = false;
+        private String mLink = "";
 
         MeetingJoinTask(String meetingID) {
             mMeetingID = meetingID;
@@ -231,15 +241,23 @@ public class MenuActivity extends AppCompatActivity
                 Map<String, String> form = new HashMap<>();
                 form.put("meeting_id", mMeetingID);
 
-                mLinkData = LinkCloud.submitFormPost(form, LinkCloud.JOIN_MEETING);
+                mLink = LinkCloud.submitFormPost(form, LinkCloud.JOIN_MEETING);
 
-                Log.i("[MA]Create", "received: " + mLinkData);
+                Log.i("[MenuA]Create", "received: " + mLink);
 
                 // Simulate network access.
                 Thread.sleep(2000);
 
-                if (mLinkSuccess = LinkCloud.hasData())
+                if (mLinkSuccess = LinkCloud.hasData()) {
+                    // Check meeting id is valid or not
+                    int id = LinkCloud.getMeetingID(LinkCloud.filterLink(mLink));
+
+                    if (id < 0) {
+                        Log.i("[MA]", "Invalid meeting id");
+                        return false;
+                    }
                     return true;
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -260,14 +278,13 @@ public class MenuActivity extends AppCompatActivity
                 intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
 
                 // Put link to MeetingActivity
-                Log.i("[MA]", "Send to Cloud " + (mLinkSuccess ? "Success" : "Fail"));
+                Log.i("[MenuA]", "Send to Cloud " + (mLinkSuccess ? "Success" : "Fail"));
                 intent.putExtra(Constants.TAG_CONNECTION, mLinkSuccess);
-                intent.putExtra(Constants.TAG_LINK_DATA, mLinkData);
+                intent.putExtra(Constants.TAG_LINK, mLink);
 
                 startActivity(intent);
             } else {
-                //mPasswordView.setError(getString(R.string.error_incorrect_password));
-                //mPasswordView.requestFocus();
+                Toast.makeText(getApplicationContext(), "加入會議失敗", Toast.LENGTH_LONG).show();
             }
         }
 

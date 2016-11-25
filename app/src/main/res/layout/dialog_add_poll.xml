@@ -43,7 +43,8 @@
             android:maxLines="2000"
             android:textSize="18sp"
             android:textColorHint="@color/black_50"
-            android:textColor="@color/black_95" />
+            android:textColor="@color/black_95"
+            android:height="100sp" />
 
     </ScrollView>
 </LinearLayout>

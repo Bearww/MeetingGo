@@ -7,12 +7,11 @@ import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
@@ -22,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -36,22 +36,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
-import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
-import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
-import static com.nuk.meetinggo.DataUtils.DOCUMENTS_FILE_NAME;
-import static com.nuk.meetinggo.DataUtils.DOCUMENT_FAVOURED;
-import static com.nuk.meetinggo.DataUtils.DOCUMENT_LINK;
-import static com.nuk.meetinggo.DataUtils.DOCUMENT_RECEIVER;
-import static com.nuk.meetinggo.DataUtils.DOCUMENT_REFERENCE;
-import static com.nuk.meetinggo.DataUtils.DOCUMENT_REQUEST_CODE;
-import static com.nuk.meetinggo.DataUtils.DOCUMENT_TITLE;
-import static com.nuk.meetinggo.DataUtils.NEW_DOCUMENT_REQUEST;
-import static com.nuk.meetinggo.DataUtils.deleteDocuments;
+import static com.nuk.meetinggo.DataUtils.NEW_RECORD_REQUEST;
+import static com.nuk.meetinggo.DataUtils.RECORDS_FILE_NAME;
+import static com.nuk.meetinggo.DataUtils.RECORD_BODY;
+import static com.nuk.meetinggo.DataUtils.RECORD_FAVOURED;
+import static com.nuk.meetinggo.DataUtils.RECORD_REFERENCE;
+import static com.nuk.meetinggo.DataUtils.RECORD_TITLE;
+import static com.nuk.meetinggo.DataUtils.deleteRecords;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 
-public class DocumentFragment extends Fragment implements AdapterView.OnItemClickListener,
+public class RecordFragment extends Fragment implements AdapterView.OnItemClickListener,
         Toolbar.OnMenuItemClickListener, AbsListView.MultiChoiceModeListener,
         SearchView.OnQueryTextListener, DetachableResultReceiver.Receiver {
 
@@ -59,13 +55,13 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
     // Layout components
     private static ListView listView;
-    private ImageButton newDocument;
-    private TextView noDocuments;
+    private ImageButton newRecord;
+    private TextView noRecords;
     private Toolbar toolbar;
     private MenuItem searchMenu;
 
-    private static JSONArray documents; // Main documents array
-    private static DocumentAdapter adapter; // Custom ListView documents adapter
+    private static JSONArray records; // Main records array
+    private static RecordAdapter adapter; // Custom ListView records adapter
 
     // Array of selected positions for deletion
     public static ArrayList<Integer> checkedArray = new ArrayList<Integer>();
@@ -73,36 +69,39 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
     // For disabling long clicks, favourite clicks and modifying the item click pattern
     public static boolean searchActive = false;
-    private ArrayList<Integer> realIndexesOfSearchResults; // To keep track of real indexes in searched documents
+    private ArrayList<Integer> realIndexesOfSearchResults; // To keep track of real indexes in searched records
 
     private int lastFirstVisibleItem = -1; // Last first item seen in list view scroll changed
-    private float newDocumentButtonBaseYCoordinate; // Base Y coordinate of newDocument button
+    private float newRecordButtonBaseYCoordinate; // Base Y coordinate of newRecord button
 
-    private AlertDialog addDocumentDialog;
+    private AlertDialog addRecordDialog, viewRecordDialog, editRecordDialog;
 
     private DetachableResultReceiver mReceiver;
-    private Handler mHandler;
 
     private LinkCloudTask linkTask;
 
-    private static int GET_DOCUMENTS = 60001;
+    private static int GET_RECORDS = 60001;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Initialize local file path and backup file path
-        localPath = new File(getContext().getFilesDir() + "/" + meetingID + DOCUMENTS_FILE_NAME);
+        // Get record file from cloud
+        linkTask = new LinkCloudTask(GET_RECORDS, "");
+        linkTask.execute((Void) null);
 
-        // Init documents array
-        documents = new JSONArray();
+        // Initialize local file path and backup file path
+        localPath = new File(getContext().getFilesDir() + "/" + meetingID + RECORDS_FILE_NAME);
+
+        // Init records array
+        records = new JSONArray();
 
         // Retrieve from local path
-        JSONArray tempDocuments = retrieveData(localPath);
+        JSONArray tempRecords = retrieveData(localPath);
 
-        // If not null -> equal main documents to retrieved documents
-        if (tempDocuments != null)
-            documents = tempDocuments;
+        // If not null -> equal main records to retrieved records
+        if (tempRecords != null)
+            records = tempRecords;
 
         mReceiver = new DetachableResultReceiver(new Handler());
         mReceiver.setReceiver(this);
@@ -110,21 +109,21 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_document, container, false);
+        View view = inflater.inflate(R.layout.fragment_record, container, false);
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
         listView = (ListView) view.findViewById(R.id.listView);
-        newDocument = (ImageButton) view.findViewById(R.id.newDocument);
-        noDocuments = (TextView) view.findViewById(R.id.noDocuments);
+        newRecord = (ImageButton) view.findViewById(R.id.newRecord);
+        noRecords = (TextView) view.findViewById(R.id.noRecords);
 
         if (toolbar != null)
             initToolbar();
 
-        newDocumentButtonBaseYCoordinate = newDocument.getY();
+        newRecordButtonBaseYCoordinate = newRecord.getY();
 
-        // Initialize DocumentAdapter with documents array
-        adapter = new DocumentAdapter(getContext(), documents);
+        // Initialize RecordAdapter with records array
+        adapter = new RecordAdapter(getContext(), records);
         listView.setAdapter(adapter);
 
         // Set item click, multi choice and scroll listeners
@@ -138,15 +137,15 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                 if (lastFirstVisibleItem == -1)
                     lastFirstVisibleItem = view.getFirstVisiblePosition();
 
-                // If scrolled up -> hide newDocument button
+                // If scrolled up -> hide newRecord button
                 if (view.getFirstVisiblePosition() > lastFirstVisibleItem)
-                    newDocumentButtonVisibility(false);
+                    newRecordButtonVisibility(false);
 
-                    // If scrolled down and delete/search not active -> show newDocument button
+                    // If scrolled down and delete/search not active -> show newRecord button
                 else if (view.getFirstVisiblePosition() < lastFirstVisibleItem &&
                         !deleteActive && !searchActive) {
 
-                    newDocumentButtonVisibility(true);
+                    newRecordButtonVisibility(true);
                 }
 
                 // Set last first visible item to current
@@ -159,37 +158,21 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         });
 
 
-        // If newDocument button clicked -> Start EditDocumentFragment intent with NEW_DOCUMENT_REQUEST as request
-        newDocument.setOnClickListener(new View.OnClickListener() {
+        // If newRecord button clicked -> Start EditRecordFragment intent with NEW_RECORD_REQUEST as request
+        newRecord.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                addDocumentDialog.show();
+                addRecordDialog.show();
             }
         });
 
-        // TODO invisible new document button
-        newDocument.setVisibility(View.GONE);
-
-        // If no documents -> show 'Press + to add new document' text, invisible otherwise
-        if (documents.length() == 0)
-            noDocuments.setVisibility(View.VISIBLE);
+        // If no records -> show 'Press + to add new record' text, invisible otherwise
+        if (records.length() == 0)
+            noRecords.setVisibility(View.VISIBLE);
 
         else
-            noDocuments.setVisibility(View.INVISIBLE);
+            noRecords.setVisibility(View.INVISIBLE);
 
-        // Init handler
-        mHandler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                // If no documents -> show 'Press + to add new document' text, invisible otherwise
-                if (documents.length() == 0)
-                    noDocuments.setVisibility(View.VISIBLE);
-
-                else
-                    noDocuments.setVisibility(View.INVISIBLE);
-            }
-        };
-        
         initDialogs(getContext());
 
         return view;
@@ -229,13 +212,13 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                                 @Override
                                 public boolean onMenuItemActionExpand(MenuItem item) {
                                     searchActive = true;
-                                    newDocumentButtonVisibility(false);
+                                    newRecordButtonVisibility(false);
                                     // Disable long-click on listView to prevent deletion
                                     listView.setLongClickable(false);
 
                                     // Init realIndexes array
                                     realIndexesOfSearchResults = new ArrayList<Integer>();
-                                    for (int i = 0; i < documents.length(); i++)
+                                    for (int i = 0; i < records.length(); i++)
                                         realIndexesOfSearchResults.add(i);
 
                                     adapter.notifyDataSetChanged();
@@ -261,70 +244,63 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
      */
     protected void initDialogs(final Context context) {
         /*
-         * Add document dialog
+         * Add record dialog
          *  If not sure -> dismiss
-         *  If yes -> check if document title length > 0
-         *    If yes -> save current document
+         *  If yes -> check if record title length > 0
+         *    If yes -> save current record
          */
         LayoutInflater inflater = LayoutInflater.from(context);
-        final View view = inflater.inflate(R.layout.dialog_add_poll, null);
+        final View addView = inflater.inflate(R.layout.dialog_add_record, null);
+
+        addRecordDialog = new AlertDialog.Builder(context)
+                .setTitle("新增記錄")
+                .setView(addView)
+                .setPositiveButton(R.string.yes_button, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // If record field not empty -> continue
+                        EditText bodyText = (EditText) addView.findViewById(R.id.recordBody);
+
+                        String record = bodyText.getText().toString();
+                        if(TextUtils.isEmpty(record))
+                            Toast.makeText(context, getString(R.string.error_field_required), Toast.LENGTH_LONG).show();
+                        else {
+                            linkTask = new LinkCloudTask(NEW_RECORD_REQUEST, record);
+                            linkTask.execute((Void) null);
+                        }
+                    }
+                })
+                .setNegativeButton(R.string.no_button, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .create();
     }
 
     /**
-     * If item clicked in list view -> Start EditDocumentFragment intent with position as requestCode
+     * If item clicked in list view -> Start viewRecordDialog with position as requestCode
      */
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        // Create fragment and give it an argument
-        ViewDocumentFragment nextFragment = new ViewDocumentFragment();
-        Bundle args = new Bundle();
-        args.putInt(DOCUMENT_REQUEST_CODE, NEW_DOCUMENT_REQUEST);
-        args.putParcelable(DOCUMENT_RECEIVER, mReceiver);
-        Log.i("[MF]", "Put receiver " + mReceiver.toString());
+        // TODO change to show dialog
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+        final View recordView = inflater.inflate(R.layout.dialog_view_record, null);
 
-        // If search is active -> use position from realIndexesOfSearchResults for EditDocumentFragment
-        if (searchActive) {
-            int newPosition = realIndexesOfSearchResults.get(position);
+        try {
+            JSONObject object = records.getJSONObject(position);
 
-            try {
-                // Package selected document content and send to EditDocumentFragment
-                args.putString(DOCUMENT_TITLE, documents.getJSONObject(newPosition).getString(DOCUMENT_TITLE));
-                args.putString(DOCUMENT_LINK, documents.getJSONObject(newPosition).getString(DOCUMENT_LINK));
-                args.putString(DOCUMENT_REFERENCE, documents.getJSONObject(newPosition).getString(DOCUMENT_REFERENCE));
-
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            args.putInt(DOCUMENT_REQUEST_CODE, newPosition);
+            TextView bodyView = (TextView) recordView.findViewById(R.id.recordBody);
+            bodyView.setText(object.getString(RECORD_BODY));
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
-        // If search is not active -> use normal position for EditDocumentFragment
-        else {
-            try {
-                // Package selected document content and send to EditDocumentFragment
-                args.putString(DOCUMENT_TITLE, documents.getJSONObject(position).getString(DOCUMENT_TITLE));
-                args.putString(DOCUMENT_LINK, documents.getJSONObject(position).getString(DOCUMENT_LINK));
-                args.putString(DOCUMENT_REFERENCE, documents.getJSONObject(position).getString(DOCUMENT_REFERENCE));
-
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            args.putInt(DOCUMENT_REQUEST_CODE, position);
-        }
-
-        nextFragment.setArguments(args);
-
-        FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
-
-        // Replace whatever is in the fragment_container view with this fragment,
-        // and add the transaction to the back stack so the user can navigate back
-        transaction.replace(R.id.layout_container, nextFragment);
-        transaction.addToBackStack(null);
-
-        // Commit the transaction
-        transaction.commit();
+        viewRecordDialog = new AlertDialog.Builder(getContext())
+                .setTitle("會議記錄")
+                .setView(recordView)
+                .create();
     }
 
     /**
@@ -386,15 +362,15 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            // Pass documents and checked items for deletion array to 'deleteDocuments'
-                            documents = deleteDocuments(documents, checkedArray);
+                            // Pass records and checked items for deletion array to 'deleteRecords'
+                            records = deleteRecords(records, checkedArray);
 
-                            // Create and set new adapter with new documents array
-                            adapter = new DocumentAdapter(getContext(), documents);
+                            // Create and set new adapter with new records array
+                            adapter = new RecordAdapter(getContext(), records);
                             listView.setAdapter(adapter);
 
-                            // Attempt to save documents to local file
-                            Boolean saveSuccessful = saveData(localPath, documents);
+                            // Attempt to save records to local file
+                            Boolean saveSuccessful = saveData(localPath, records);
 
                             // If save successful -> toast successfully deleted
                             if (saveSuccessful) {
@@ -411,12 +387,12 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                                 }
                             });
 
-                            // If no documents -> show 'Press + to add new document' text, invisible otherwise
-                            if (documents.length() == 0)
-                                noDocuments.setVisibility(View.VISIBLE);
+                            // If no records -> show 'Press + to add new record' text, invisible otherwise
+                            if (records.length() == 0)
+                                noRecords.setVisibility(View.VISIBLE);
 
                             else
-                                noDocuments.setVisibility(View.INVISIBLE);
+                                noRecords.setVisibility(View.INVISIBLE);
 
                             mode.finish();
                         }
@@ -440,7 +416,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         mode.getMenuInflater().inflate(R.menu.menu_delete, menu); // Inflate 'menu_delete' menu
         deleteActive = true; // Set deleteActive to true as we entered delete mode
-        newDocumentButtonVisibility(false); // Hide newDocument button
+        newRecordButtonVisibility(false); // Hide newRecord button
         adapter.notifyDataSetChanged(); // Notify adapter to hide favourite buttons
 
         return true;
@@ -451,7 +427,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
     public void onDestroyActionMode(ActionMode mode) {
         checkedArray = new ArrayList<Integer>(); // Reset checkedArray
         deleteActive = false; // Set deleteActive to false as we finished delete mode
-        newDocumentButtonVisibility(true); // Show newDocument button
+        newRecordButtonVisibility(true); // Show newRecord button
         adapter.notifyDataSetChanged(); // Notify adapter to show favourite buttons
     }
 
@@ -461,16 +437,16 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
     }
 
     /**
-     * Method to show and hide the newDocument button
+     * Method to show and hide the newRecord button
      * @param isVisible true to show button, false to hide
      */
-    protected void newDocumentButtonVisibility(boolean isVisible) {
+    protected void newRecordButtonVisibility(boolean isVisible) {
         if (isVisible) {
-            newDocument.animate().cancel();
-            newDocument.animate().translationY(newDocumentButtonBaseYCoordinate);
+            newRecord.animate().cancel();
+            newRecord.animate().translationY(newRecordButtonBaseYCoordinate);
         } else {
-            newDocument.animate().cancel();
-            newDocument.animate().translationY(newDocumentButtonBaseYCoordinate + 500);
+            newRecord.animate().cancel();
+            newRecord.animate().translationY(newRecordButtonBaseYCoordinate + 500);
         }
     }
 
@@ -487,29 +463,29 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         // If query text length longer than 0
         if (s.length() > 0) {
             // Create new JSONArray and reset realIndexes array
-            JSONArray documentsFound = new JSONArray();
+            JSONArray recordsFound = new JSONArray();
             realIndexesOfSearchResults = new ArrayList<Integer>();
 
-            // Loop through main documents list
-            for (int i = 0; i < documents.length(); i++) {
-                JSONObject document = null;
+            // Loop through main records list
+            for (int i = 0; i < records.length(); i++) {
+                JSONObject record = null;
 
-                // Get document at position i
+                // Get record at position i
                 try {
-                    document = documents.getJSONObject(i);
+                    record = records.getJSONObject(i);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
 
-                // If document not null and title/body contain query text
-                // -> Put in new documents array and add i to realIndexes array
-                if (document != null) {
+                // If record not null and title/body contain query text
+                // -> Put in new records array and add i to realIndexes array
+                if (record != null) {
                     try {
-                        if (document.getString(DOCUMENT_TITLE).toLowerCase().contains(s) ||
-                                document.getString(DOCUMENT_REFERENCE).toLowerCase().contains(s)) {
+                        if (record.getString(RECORD_TITLE).toLowerCase().contains(s) ||
+                                record.getString(RECORD_REFERENCE).toLowerCase().contains(s)) {
 
-                            documentsFound.put(document);
+                            recordsFound.put(record);
                             realIndexesOfSearchResults.add(i);
                         }
 
@@ -519,18 +495,18 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                 }
             }
 
-            // Create and set adapter with documentsFound to refresh ListView
-            DocumentAdapter searchAdapter = new DocumentAdapter(getContext(), documentsFound);
+            // Create and set adapter with recordsFound to refresh ListView
+            RecordAdapter searchAdapter = new RecordAdapter(getContext(), recordsFound);
             listView.setAdapter(searchAdapter);
         }
 
         // If query text length is 0 -> re-init realIndexes array (0 to length) and reset adapter
         else {
             realIndexesOfSearchResults = new ArrayList<Integer>();
-            for (int i = 0; i < documents.length(); i++)
+            for (int i = 0; i < records.length(); i++)
                 realIndexesOfSearchResults.add(i);
 
-            adapter = new DocumentAdapter(getContext(), documents);
+            adapter = new RecordAdapter(getContext(), records);
             listView.setAdapter(adapter);
         }
 
@@ -545,28 +521,28 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
     /**
      * When search mode is finished
      * Collapse searchView widget, searchActive to false, reset adapter, enable listView long clicks
-     * and show newDocument button
+     * and show newRecord button
      */
     protected void searchEnded() {
         searchActive = false;
-        adapter = new DocumentAdapter(getContext(), documents);
+        adapter = new RecordAdapter(getContext(), records);
         listView.setAdapter(adapter);
         listView.setLongClickable(true);
-        newDocumentButtonVisibility(true);
+        newRecordButtonVisibility(true);
     }
 
     /**
-     * Favourite or un-favourite the document at position
+     * Favourite or un-favourite the record at position
      * @param context application context
      * @param favourite true to favourite, false to un-favourite
-     * @param position position of document
+     * @param position position of record
      */
     public static void setFavourite(Context context, boolean favourite, int position) {
         JSONObject newFavourite = null;
 
-        // Get document at position and store in newFavourite
+        // Get record at position and store in newFavourite
         try {
-            newFavourite = documents.getJSONObject(position);
+            newFavourite = records.getJSONObject(position);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -576,14 +552,14 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
             if (favourite) {
                 // Set favoured to true
                 try {
-                    newFavourite.put(DOCUMENT_FAVOURED, true);
+                    newFavourite.put(RECORD_FAVOURED, true);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
 
-                // If favoured document is not at position 0
-                // Sort documents array so favoured document is first
+                // If favoured record is not at position 0
+                // Sort records array so favoured record is first
                 if (position > 0) {
                     JSONArray newArray = new JSONArray();
 
@@ -595,10 +571,10 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                     }
 
                     // Copy contents to new sorted array without favoured element
-                    for (int i = 0; i < documents.length(); i++) {
+                    for (int i = 0; i < records.length(); i++) {
                         if (i != position) {
                             try {
-                                newArray.put(documents.get(i));
+                                newArray.put(records.get(i));
 
                             } catch (JSONException e) {
                                 e.printStackTrace();
@@ -606,9 +582,9 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                         }
                     }
 
-                    // Equal main documents array with new sorted array and reset adapter
-                    documents = newArray;
-                    adapter = new DocumentAdapter(context, documents);
+                    // Equal main records array with new sorted array and reset adapter
+                    records = newArray;
+                    adapter = new RecordAdapter(context, records);
                     listView.setAdapter(adapter);
 
                     // Smooth scroll to top
@@ -619,10 +595,10 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                     });
                 }
 
-                // If favoured document was first -> just update object in documents array and notify adapter
+                // If favoured record was first -> just update object in records array and notify adapter
                 else {
                     try {
-                        documents.put(position, newFavourite);
+                        records.put(position, newFavourite);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -632,11 +608,11 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                 }
             }
 
-            // If document not favourite -> set favoured to false and notify adapter
+            // If record not favourite -> set favoured to false and notify adapter
             else {
                 try {
-                    newFavourite.put(DOCUMENT_FAVOURED, false);
-                    documents.put(position, newFavourite);
+                    newFavourite.put(RECORD_FAVOURED, false);
+                    records.put(position, newFavourite);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -646,15 +622,41 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
             }
         }
 
-        // Save documents to local file
-        saveData(localPath, documents);
+        // Save records to local file
+        saveData(localPath, records);
     }
 
     /**
-     * Callback method when EditDocumentFragment finished adding new document or editing existing document
-     * @param requestCode requestCode for intent sent, in our case either NEW_DOCUMENT_REQUEST or position
+     * Change the record at position
+     * @param context application context
+     * @param record true to favourite, false to un-favourite
+     * @param position position of record
+     */
+    public static void updateRecord(Context context, String record, int position) {
+        JSONObject newRecord = null;
+
+        // Get record at position and store in newFavourite
+        try {
+            newRecord = records.getJSONObject(position);
+
+            if (!record.equals(newRecord.getString(RECORD_BODY))) {
+                newRecord.put(RECORD_BODY, record);
+                records.put(position, newRecord);
+                adapter.notifyDataSetChanged();;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        // Save records to local file
+        saveData(localPath, records);
+    }
+
+    /**
+     * Callback method when EditRecordFragment finished adding new record or editing existing record
+     * @param requestCode requestCode for intent sent, in our case either NEW_RECORD_REQUEST or position
      * @param resultCode resultCode from activity, either RESULT_OK or RESULT_CANCELED
-     * @param resultData Data bundle passed back from EditDocumentFragment
+     * @param resultData Data bundle passed back from EditRecordFragment
      */
     @Override
     public void onReceiveResult(int requestCode, int resultCode, Bundle resultData) {
@@ -676,108 +678,25 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
      */
     public class LinkCloudTask extends AsyncTask<Void, Void, Boolean> {
 
-        private final String URL_DOCUMENTS = LinkCloud.DOC_INFO + MeetingInfo.meetingID;
+        private final String URL_RECORDS = LinkCloud.DOC_INFO + MeetingInfo.meetingID;
 
         private int requestCode;
-        private int resultCode;
-        private Bundle resultData;
+        private String mRecord;
 
         private Boolean mLinkSuccess;
         private String mLinkData;
 
-        private final String CONTENT_OBJECT = "obj_doc_list";
-        private final String CONTENT_TITLE = "remark_name";
-        private final String CONTENT_LINK = "download";
-
-        LinkCloudTask(int request, int result, Bundle data) {
+        LinkCloudTask(int request, String record) {
             requestCode = request;
-            resultCode = result;
-            resultData = data;
+            mRecord = record;
         }
 
         @Override
         protected Boolean doInBackground(Void... params) {
 
-            // Cloud documents
-            if (requestCode == CLOUD_UPDATE) {
-                JSONObject request = null;
+            if (requestCode == GET_RECORDS) {
                 try {
-                    request = new JSONObject(resultData.getString(CLOUD_UPDATE_CODE));
-
-                    JSONObject info = request.getJSONObject("link");
-                    Log.i("[DF]", "info:" + info.toString());
-
-                    JSONObject object = null;
-                    if (info.has(CONTENT_OBJECT)) {
-                        object = info.getJSONObject(CONTENT_OBJECT);
-
-                        JSONArray title = null;
-                        JSONArray link = null;
-                        if (object.has(CONTENT_TITLE))
-                            title = object.getJSONArray(CONTENT_TITLE);
-                        else
-                            Log.i("[DF]", "Fail to fetch field " + CONTENT_TITLE);
-
-                        if (object.has(CONTENT_LINK))
-                            link = object.getJSONArray(CONTENT_LINK);
-                        else
-                            Log.i("[DF]", "Fail to fetch field " + CONTENT_LINK);
-
-                        if (title != null && link != null) {
-                            if (title.length() == link.length()) {
-                                // Update documents, check document id is either existed or not
-                                // Yes -> update data, no -> add new document
-                                for(int i = 0; i < title.length(); i++) {
-                                    int position = -1;
-                                    for(int j = 0; j < documents.length(); j++) {
-                                        if(documents.getJSONObject(j).has(DOCUMENT_TITLE)
-                                                && title.getString(i).equals(documents.getJSONObject(j).getString(DOCUMENT_TITLE))) {
-                                            position = j;
-                                            break;
-                                        }
-                                    }
-
-                                    JSONObject document = null;
-                                    // Add new document
-                                    if (position < 0) {
-                                        document = new JSONObject();
-
-                                        // Add new document
-                                        document.put(DOCUMENT_TITLE, title.getString(i));
-                                        document.put(DOCUMENT_LINK, link.getString(i));
-                                        document.put(DOCUMENT_REFERENCE, "");
-                                        document.put(DOCUMENT_FAVOURED, false);
-
-                                        documents.put(document);
-                                    }
-                                    // Update existed document
-                                    else {
-                                        document = documents.getJSONObject(position);
-
-                                        document.put(DOCUMENT_LINK, link.getString(i));
-
-                                        documents.put(position, document);
-                                    }
-                                }
-
-                                Thread.sleep(2000);
-                                return true;
-                            }
-                            else
-                                Log.i("[DF]", "Field length aren't the same in array");
-                        }
-                        else
-                            Log.i("[DF]", "Loading object content error");
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            else if (requestCode == GET_DOCUMENTS) {
-                try {
-                    JSONObject object = LinkCloud.request(URL_DOCUMENTS);
+                    JSONObject object = LinkCloud.request(URL_RECORDS);
                     Map<String, String> links = LinkCloud.getLink(object);
 
                     for (String key : links.keySet())
@@ -791,6 +710,10 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                 }
                 return true;
             }
+            else if (requestCode == NEW_RECORD_REQUEST) {
+                // Link to cloud
+                return true;
+            }
 
             return false;
         }
@@ -800,15 +723,43 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
             linkTask = null;
 
             if(success) {
-                if (requestCode == CLOUD_UPDATE) {
-                    // Update document list view
-                    adapter.notifyDataSetChanged();
+                if (requestCode == NEW_RECORD_REQUEST) {
+                    Log.i("[RF]", "New record");
+                    JSONObject newRecordObject = null;
+                    
+                    try {
+                        // Add new record to array
+                        newRecordObject = new JSONObject();
+                        newRecordObject.put(RECORD_TITLE, "");
+                        newRecordObject.put(RECORD_BODY, mRecord);
+                        newRecordObject.put(RECORD_REFERENCE, "");
+                        newRecordObject.put(RECORD_FAVOURED, false);
+                        
+                        records.put(newRecordObject);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
 
-                    // If no documents -> show 'Press + to add new document text, invisible otherwise
-                    if(documents.length() == 0)
-                        noDocuments.setVisibility(View.VISIBLE);
-                    else
-                        noDocuments.setVisibility(View.INVISIBLE);
+                    // If newRecordObject not null -> notify adapter
+                    if (newRecordObject != null) {
+                        adapter.notifyDataSetChanged();
+
+                        Boolean saveSuccessful = saveData(localPath, records);
+
+                        if (saveSuccessful) {
+                            Toast toast = Toast.makeText(getContext(),
+                                    getResources().getString(R.string.toast_new_record),
+                                    Toast.LENGTH_SHORT);
+                            toast.show();
+                        }
+
+                        // If no records -> show 'Press + to add new record' text, invisible otherwise
+                        if (records.length() == 0)
+                            noRecords.setVisibility(View.VISIBLE);
+
+                        else
+                            noRecords.setVisibility(View.INVISIBLE);
+                    }
                 }
             }
         }

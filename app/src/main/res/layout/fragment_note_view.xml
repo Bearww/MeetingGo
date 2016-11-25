@@ -28,7 +28,7 @@
         android:gravity="center"
         android:hint="@string/note_title"
         android:maxLines="1"
-        android:maxLength="30"
+        android:maxLength="50"
         android:textSize="25sp"
         android:textStyle="bold"
         android:textColorHint="@color/black_50"

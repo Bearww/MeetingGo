@@ -39,7 +39,6 @@ public class DataUtils {
     public static final String NOTES_ARRAY_NAME = "notes"; // Root object name
 
     public static final String POLLS_FILE_NAME = "polls.json"; // Local polls file name
-    public static final String POLLS_ARRAY_NAME = "polls"; // Root object name
 
     public static final String MEMBERS_FILE_NAME = "members.json"; // Local members file name
 
@@ -47,14 +46,21 @@ public class DataUtils {
 
     public static final String QUESTIONS_FILE_NAME = "questions.json"; // Local polls file name
 
+    public static final String RECORDS_FILE_NAME = "records.json"; // Local records file name
+
     public static final String BACKUP_FOLDER_PATH = "/Swiftnotes"; // Backup folder path
     public static final String BACKUP_FILE_NAME = "swiftnotes_backup.json"; // Backup file name
+
+    // Cloud data constants used in key-value store
+    public static final String CLOUD_UPDATE_CODE = "updateCode";
 
     // Note data constants used in intents and in key-value store
     public static final int NEW_NOTE_REQUEST = 60000;
     public static final String NOTE_REQUEST_CODE = "requestCode";
+    public static final String NOTE_ID = "id";
     public static final String NOTE_TITLE = "title";
     public static final String NOTE_BODY = "body";
+    public static final String NOTE_LINK = "link";
     public static final String NOTE_COLOUR = "colour";
     public static final String NOTE_FAVOURED = "favoured";
     public static final String NOTE_FONT_SIZE = "fontSize";
@@ -64,6 +70,7 @@ public class DataUtils {
     // Poll data constants used in intents and in key-value store
     public static final int NEW_POLL_REQUEST = 70000;
     public static final String POLL_REQUEST_CODE = "requestCode";
+    public static final String POLL_ID = "id";
     public static final String POLL_TITLE = "title";
     public static final String POLL_BODY = "body";
     public static final String POLL_COLOUR = "colour";
@@ -74,12 +81,13 @@ public class DataUtils {
     public static final String POLL_ENABLED = "enabled";
 
     // Member data constants used in intents and in key-value store
-    public static final int NEW_MEMBER_REQUEST = 70000;
+    public static final int NEW_MEMBER_REQUEST = 80000;
     public static final int LIST_MEMBER_REQUEST = 70001;
     public static final String MEMBER_REQUEST_CODE = "requestCode";
     public static final String MEMBER_ID = "id";
     public static final String MEMBER_NAME = "name";
     public static final String MEMBER_EMAIL = "email";
+    public static final String MEMBER_ONLINE = "online";
     public static final String MEMBER_COLOUR = "colour";
 
     // Document data constants used in intents and in key-value store
@@ -92,8 +100,9 @@ public class DataUtils {
     public static final String DOCUMENT_RECEIVER = "receiver";
 
     // Ask data constants used in intents and in key-value store
-    public static final int NEW_QUESTION_REQUEST = 60000;
+    public static final int NEW_QUESTION_REQUEST = 100000;
     public static final String QUESTION_REQUEST_CODE = "requestCode";
+    public static final String QUESTION_ID = "id";
     public static final String QUESTION_TITLE = "title";
     public static final String QUESTION_BODY = "body";
     public static final String QUESTION_COLOUR = "colour";
@@ -105,6 +114,15 @@ public class DataUtils {
     public static final String ANSWER_CONTENT = "content";
     public static final String ANSWER_OWNER = "owner";
     public static final String ANSWER_FAVOURED = "favoured";
+
+    // Record data constants used in intents and in key-value store
+    public static final int NEW_RECORD_REQUEST = 110000;
+    public static final String RECORD_REQUEST_CODE = "requestCode";
+    public static final String RECORD_TITLE = "title";
+    public static final String RECORD_REFERENCE = "reference";
+    public static final String RECORD_BODY = "body";
+    public static final String RECORD_FAVOURED = "favoured";
+    public static final String RECORD_RECEIVER = "receiver";
 
     /**
      * Wrap 'notes' array into a root object and store in file 'toFile'
@@ -416,6 +434,33 @@ public class DataUtils {
 
         // Finally, return the new questions
         return newQuestions;
+    }
+
+    /**
+     * Create new JSONArray of records from 'from' without the records at positions in 'selectedRecords'
+     * @param from Main records array to delete from
+     * @param selectedRecords ArrayList of Integer which represent record positions to be deleted
+     * @return New JSONArray of records without the records at positions 'selectedRecords'
+     */
+    public static JSONArray deleteRecords(JSONArray from, ArrayList<Integer> selectedRecords) {
+        // Init new JSONArray
+        JSONArray newRecords = new JSONArray();
+
+        // Loop through main records
+        for (int i = 0; i < from.length(); i++) {
+            // If array of positions to delete doesn't contain current position -> put in new array
+            if (!selectedRecords.contains(i)) {
+                try {
+                    newRecords.put(from.get(i));
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        // Finally, return the new records
+        return newRecords;
     }
 
     /**

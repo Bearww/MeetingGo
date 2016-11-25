@@ -40,6 +40,7 @@ import java.util.Map;
 
 import static com.nuk.meetinggo.DataUtils.BACKUP_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.BACKUP_FOLDER_PATH;
+import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
 import static com.nuk.meetinggo.DataUtils.NEW_NOTE_REQUEST;
 import static com.nuk.meetinggo.DataUtils.NOTES_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.NOTE_BODY;
@@ -47,6 +48,7 @@ import static com.nuk.meetinggo.DataUtils.NOTE_COLOUR;
 import static com.nuk.meetinggo.DataUtils.NOTE_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.NOTE_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.NOTE_HIDE_BODY;
+import static com.nuk.meetinggo.DataUtils.NOTE_ID;
 import static com.nuk.meetinggo.DataUtils.NOTE_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.NOTE_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.NOTE_TITLE;
@@ -55,6 +57,7 @@ import static com.nuk.meetinggo.DataUtils.isExternalStorageReadable;
 import static com.nuk.meetinggo.DataUtils.isExternalStorageWritable;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
+import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
 import static com.nuk.meetinggo.MeetingInfo.getControlable;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 
@@ -223,6 +226,8 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
         else
             noNotes.setVisibility(View.INVISIBLE);
+
+
 
         initDialogs(getContext());
 
@@ -529,6 +534,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 args.putString(NOTE_BODY, notes.getJSONObject(newPosition).getString(NOTE_BODY));
                 args.putString(NOTE_COLOUR, notes.getJSONObject(newPosition).getString(NOTE_COLOUR));
                 args.putInt(NOTE_FONT_SIZE, notes.getJSONObject(newPosition).getInt(NOTE_FONT_SIZE));
+                args.putString(NOTE_ID, notes.getJSONObject(newPosition).getString(NOTE_ID));
 
                 if (notes.getJSONObject(newPosition).has(NOTE_HIDE_BODY)) {
                     args.putBoolean(NOTE_HIDE_BODY,
@@ -553,6 +559,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 args.putString(NOTE_BODY, notes.getJSONObject(position).getString(NOTE_BODY));
                 args.putString(NOTE_COLOUR, notes.getJSONObject(position).getString(NOTE_COLOUR));
                 args.putInt(NOTE_FONT_SIZE, notes.getJSONObject(position).getInt(NOTE_FONT_SIZE));
+                args.putString(NOTE_ID, notes.getJSONObject(position).getString(NOTE_ID));
 
                 if (notes.getJSONObject(position).has(NOTE_HIDE_BODY)) {
                     args.putBoolean(NOTE_HIDE_BODY,
@@ -1063,6 +1070,10 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         private Boolean mLinkSuccess;
         private String mLinkData;
 
+        private final String CONTENT_OBJECT = "obj_meeting_topic";
+        private final String CONTENT_TITLE = "topic";
+        private final String CONTENT_ID = "topic_id";
+
         LinkCloudTask(int request, int result, Bundle data) {
             requestCode = request;
             resultCode = result;
@@ -1071,37 +1082,116 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            if (resultData != null) {
-                // Link cloud to save, if success than add to array
-                try {
-                    Log.i("[MF]", "create note form");
-                    Map<String, String> form = new HashMap<>();
+            // Link cloud to save, if success than add to array
+            try {
+                Log.i("[MF]", "create note form");
+                Map<String, String> form = new HashMap<>();
 
-                    // Add new note to form
-                    form.put("topic", resultData.getString(NOTE_TITLE));
-                    //form.put("content", resultData.getString(NOTE_BODY));
-                    //form.put(NOTE_COLOUR, resultData.getString(NOTE_COLOUR));
-                    //form.put(NOTE_FAVOURED, false);
-                    //form.put(NOTE_FONT_SIZE, resultData.getInt(NOTE_FONT_SIZE));
-                    //form.put(NOTE_HIDE_BODY, resultData.getBoolean(NOTE_HIDE_BODY));
+                // Add new note to form
+                form.put("topic", resultData.getString(NOTE_TITLE));
+                //form.put("content", resultData.getString(NOTE_BODY));
+                //form.put(NOTE_COLOUR, resultData.getString(NOTE_COLOUR));
+                //form.put(NOTE_FAVOURED, false);
+                //form.put(NOTE_FONT_SIZE, resultData.getInt(NOTE_FONT_SIZE));
+                //form.put(NOTE_HIDE_BODY, resultData.getBoolean(NOTE_HIDE_BODY));
 
-                    // Save new note
-                    if (requestCode == NEW_NOTE_REQUEST) {
-                        // Insert to database
-                        mLinkData = LinkCloud.submitFormPost(form, addNoteLink);
-                        if (mLinkSuccess = LinkCloud.hasData())
-                            return true;
+                // Cloud note data
+                if (requestCode == CLOUD_UPDATE) {
+                    JSONObject request = new JSONObject(resultData.getString(CLOUD_UPDATE_CODE));
+
+                    JSONObject info = LinkCloud.getContent(request);
+                    Log.i("[MF]", "info:" + info.toString());
+
+                    JSONObject object = null;
+
+                    if (info.has(CONTENT_OBJECT)) {
+                        object = info.getJSONObject(CONTENT_OBJECT);
+
+                        JSONArray title = null;
+                        JSONArray id = null;
+                        if (object.has(CONTENT_TITLE))
+                            title = object.getJSONArray(CONTENT_TITLE);
+                        else
+                            Log.i("[MF]", "Fail to fetch field " + CONTENT_TITLE);
+
+                        if (object.has(CONTENT_ID))
+                            id = object.getJSONArray(CONTENT_ID);
+                        else
+                            Log.i("[MF]", "Fail to fetch field " + CONTENT_ID);
+
+                        if (title != null && id != null) {
+                            if (title.length() == id.length()) {
+                                // Update notes, check note id is either existed or not
+                                // Yes -> update data, no -> add new note
+                                for(int i = 0; i < id.length(); i++) {
+                                    int position = -1;
+                                    for(int j = 0; j < notes.length(); j++) {
+                                        if(notes.getJSONObject(j).has(NOTE_ID)
+                                                && id.getString(i).equals(notes.getJSONObject(j).getString(NOTE_ID))) {
+                                            position = j;
+                                            break;
+                                        }
+                                    }
+
+                                    JSONObject note = null;
+                                    // Add new note
+                                    if (position < 0) {
+                                        note = new JSONObject();
+
+                                        // TODO add body
+                                        note.put(NOTE_ID, id.getString(i));
+                                        note.put(NOTE_TITLE, title.getString(i));
+                                        note.put(NOTE_BODY, "");
+                                        note.put(NOTE_COLOUR, "#FFFFFF");
+                                        note.put(NOTE_FAVOURED, false);
+                                        note.put(NOTE_FONT_SIZE, 18);
+                                        note.put(NOTE_HIDE_BODY, false);
+
+                                        notes.put(note);
+                                    }
+                                    // Update existed note
+                                    else {
+                                        note = notes.getJSONObject(position);
+
+                                        note.put(NOTE_TITLE, title.getString(i));
+
+                                        notes.put(position, note);
+                                    }
+                                }
+
+                                Thread.sleep(2000);
+
+                                return true;
+                            }
+                            else
+                                Log.i("[MF]", "Field length aren't the same in array");
+                        }
+                        else
+                            Log.i("[MF]", "Loading object content error");
                     }
-                    // Update exsited note
-                    else {
-                        // Update database
-                        mLinkData = LinkCloud.submitFormPost(form, addNoteLink);
-                        if (mLinkSuccess = LinkCloud.hasData())
-                            return true;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    else
+                        Log.i("[MF]", "No content key " + CONTENT_OBJECT);
                 }
+                // Save new note
+                else if (requestCode == NEW_NOTE_REQUEST) {
+                    // Insert to database
+                    mLinkData = LinkCloud.submitFormPost(form, addNoteLink);
+                    if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
+                }
+                // Update exsited note
+                else {
+                    // Update database
+                    mLinkData = LinkCloud.submitFormPost(form, addNoteLink);
+                    if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
             return false;
         }
@@ -1111,8 +1201,17 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
             linkTask = null;
 
             if(success) {
+                if (requestCode == CLOUD_UPDATE) {
+                    // Update note list view
+                    adapter.notifyDataSetChanged();
+
+                    if (notes.length() == 0)
+                        noNotes.setVisibility(View.VISIBLE);
+                    else
+                        noNotes.setVisibility(View.INVISIBLE);
+                }
                 // If new note was saved
-                if (requestCode == NEW_NOTE_REQUEST) {
+                else if (requestCode == NEW_NOTE_REQUEST) {
                     JSONObject newNoteObject = null;
 
                     try {

@@ -22,10 +22,7 @@ import org.json.JSONObject;
 import static com.nuk.meetinggo.DataUtils.ANSWER_CONTENT;
 import static com.nuk.meetinggo.DataUtils.ANSWER_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.ANSWER_OWNER;
-import static com.nuk.meetinggo.MainFragment.checkedArray;
-import static com.nuk.meetinggo.MainFragment.deleteActive;
-import static com.nuk.meetinggo.MainFragment.searchActive;
-import static com.nuk.meetinggo.MainFragment.setFavourite;
+import static com.nuk.meetinggo.ViewQuestionFragment.setFavourite;
 
 /**
  * Adapter class for custom answers ListView
@@ -115,32 +112,14 @@ public class AnswerAdapter extends BaseAdapter implements ListAdapter {
             else
                 favourite.setImageResource(R.mipmap.ic_unfav);
 
-
-            // If search or delete modes are active -> hide favourite button; Show otherwise
-            if (searchActive || deleteActive) {
-                favourite.setVisibility(View.INVISIBLE);
-            }
-            else {
-                favourite.setVisibility(View.VISIBLE);
-            }
-
             titleView.setText(title);
 
             bodyView.setVisibility(View.VISIBLE);
             bodyView.setText(body);
             bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
 
-            // If current answer is selected for deletion -> highlight
-            if (checkedArray.contains(position)) {
-                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(context.getResources().getColor(R.color.theme_primary));
-            }
-
-            // If current answer is not selected -> set background colour to normal
-            else {
-                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(Color.parseColor(colour));
-            }
+            ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                    .setColor(Color.parseColor(colour));
 
             // Set answer background style to rounded card
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {

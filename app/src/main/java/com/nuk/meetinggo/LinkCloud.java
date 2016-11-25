@@ -13,13 +13,12 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,20 +36,24 @@ public class LinkCloud {
 	public static String MEETING_INFO		= "back_end/meeting/get_info/get_meeting_info.php?meeting_id=";
 	public static String DOC_INFO			= "back_end/meeting/get_info/get_meeting_doc.php?meeting_id=";
 	public static String ADD_MEETING		= "add_meeting.php";
-	public static String JOIN_MEETING		= "join_meeting.php";
+	public static String JOIN_MEETING		= "device/employee/join_meeting.php";
 	public static String ADD_POLL			= "back_end/meeting/set_info/set_meeting_initiate_vote.php";
+
+	// Cloud data constants used in key-value store
+	public static final int CLOUD_UPDATE = 50000;
 
 	//---------------------------------------------------------------------------------------------------------------------//
 
 	//private static String DEFAUL_WEB_LINK = "http://10.0.109.146/cloud/meeting_cloud/";
-	private static String DEFAUL_WEB_LINK = "http://169.254.156.204/cloud/meeting_cloud/";
+	//private static String DEFAUL_WEB_LINK = "http://169.254.156.204/cloud/meeting_cloud/";
+	private static String DEFAUL_WEB_LINK = "http://192.168.0.102:8080/meeting_cloud/";
 
-	private static String BASIC_WEB_LINK = DEFAUL_WEB_LINK;
+	public static String BASIC_WEB_LINK = DEFAUL_WEB_LINK;
 	private static DefaultHttpClient conn_cloud = new DefaultHttpClient();
 	private static int json_index;
 	public static JSONObject json_web_data = new JSONObject();
 	public static int response_status;
-	
+
 	public static Boolean setLink(String basic_link) {
 		if (basic_link == "")
 			return false;
@@ -63,7 +66,7 @@ public class LinkCloud {
 		url = BASIC_WEB_LINK + url;
 
 		Log.i("[LC]request", url);
-	    HttpPost post = new HttpPost(url);
+		HttpPost post = new HttpPost(url);
 		HttpParams httpParameters = new BasicHttpParams();
 		// Set the timeout in milliseconds until a connection is established.
 		// The default value is zero, that means the timeout is not used.
@@ -75,25 +78,22 @@ public class LinkCloud {
 		// in milliseconds which is the timeout for waiting for data.
 		int timeoutSocket = 5000;
 		HttpConnectionParams.setSoTimeout(httpParameters, timeoutSocket);
-	    HttpResponse res = conn_cloud.execute(post);
-	    post.abort();
+		HttpResponse res = conn_cloud.execute(post);
+		post.abort();
 
-	    while (res.getStatusLine().getStatusCode() == 302) {
-	    	url = BASIC_WEB_LINK + res.getLastHeader("Location").getValue();
-	    	post = new HttpPost(url);
-		    res = conn_cloud.execute(post);
-	    	post.abort();
-	    }
+		while (res.getStatusLine().getStatusCode() == 302) {
+			url = BASIC_WEB_LINK + res.getLastHeader("Location").getValue();
+			post = new HttpPost(url);
+			res = conn_cloud.execute(post);
+			post.abort();
+		}
 
-	    BufferedReader br = new BufferedReader(new InputStreamReader(res.getEntity().getContent(), "utf-8"));
-	    post.abort();
-	    String data = "";
-	    String line = "";
-	    while ((line = br.readLine()) != null) {
-            data = data + line + '\n';
-        }
+		//BufferedReader br = new BufferedReader(new InputStreamReader(res.getEntity().getContent(), "utf-8"));
+		post.abort();
 
-        Log.i("[LC]Link Data", data);
+		String data = EntityUtils.toString(res.getEntity());
+
+		Log.i("[LC]Link Data", data);
 		json_index = data.indexOf('{');
 		if(json_index < 0) {
 			Log.i("[LC]request", "index invalid " + json_index);
@@ -109,45 +109,38 @@ public class LinkCloud {
 	}
 
 	public static String submitFormPost(Map<String, String> form_data, String url)
-	throws IOException {
+			throws IOException {
 		url = BASIC_WEB_LINK + url;
-	    HttpPost post = new HttpPost(url);
+		HttpPost post = new HttpPost(url);
 		Log.d("[LC]URL", url);
-	    
-	    ArrayList<NameValuePair> post_form = new ArrayList<NameValuePair>();
-	    for(Map.Entry<String, String> entry:form_data.entrySet()) {
-	    	if(!entry.getKey().contains("post_link")) {
+
+		ArrayList<NameValuePair> post_form = new ArrayList<NameValuePair>();
+		for(Map.Entry<String, String> entry:form_data.entrySet()) {
+			if(!entry.getKey().contains("post_link")) {
 				post_form.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
 				//Log.d("[LC]q", entry.getKey() + " " + entry.getValue());
 			}
-	    }   
-	    post.setEntity(new UrlEncodedFormEntity(post_form, "UTF-8"));
+		}
+		post.setEntity(new UrlEncodedFormEntity(post_form, "UTF-8"));
 
 		//post.getParams().setParameter(CookieSpecPNames.DATE_PATTERNS, Arrays.asList("EEE, d MMM yyyy HH:mm:ss z"));
-	    HttpResponse response = conn_cloud.execute(post);
+		HttpResponse response = conn_cloud.execute(post);
 
 		// Get Cookies
 		List<Cookie> cookiejar = conn_cloud.getCookieStore().getCookies();
 
-	    BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-	    
-	    post.abort();
+		post.abort();
 
-		String sResponse;
-		String s = "";
-
-		while ((sResponse = reader.readLine()) != null) {
-			s = s + sResponse + '\n';
-			Log.i("[LC]Response", sResponse);
-		}
+		String sResponse = EntityUtils.toString(response.getEntity());
+		Log.i("[LC]", " response:" + sResponse);
 
 		response_status = response.getStatusLine().getStatusCode();
 
-		return s;
+		return sResponse;
 	}
 
 	public static Map<String, String> getLink(JSONObject json_data)
-	throws JSONException {
+			throws JSONException {
 
 		if(json_data == null)
 			return new HashMap<>();
@@ -201,7 +194,7 @@ public class LinkCloud {
 	}
 
 	public static Map<String, String> getForm(JSONObject json_data)
-	throws JSONException {
+			throws JSONException {
 
 		if(json_data == null)
 			return new HashMap<>();
@@ -242,7 +235,7 @@ public class LinkCloud {
 	}
 
 	public static Map<String, String> getMemberList(JSONObject json_data, String member_name, String ip)
-	throws JSONException {
+			throws JSONException {
 
 		if(json_data == null)
 			return new HashMap<>();
@@ -292,7 +285,7 @@ public class LinkCloud {
 	}
 
 	public static String useClientIpToGetName(JSONObject json_data, String client_ip)
-	throws JSONException {
+			throws JSONException {
 
 		String client_name = null;
 
@@ -353,5 +346,37 @@ public class LinkCloud {
 			e.printStackTrace();
 		}
 		return json_web_data;
+	}
+
+	public static JSONObject getContent(JSONObject object) throws JSONException {
+		JSONObject content = new JSONObject();
+
+		if (object != null) {
+			if (object.has("contents")) {
+				content = object.getJSONObject("contents");
+			}
+		}
+
+		return content;
+	}
+
+	public static int getMeetingID(String url) {
+		String target = "meeting_id=";
+		int lastIndex = url.lastIndexOf(target);
+		String id = url.substring(lastIndex + target.length());
+		Log.i("[LC]meeting id", id);
+
+		for (int i = 0; i < id.length(); i++)
+			if (id.charAt(i) < '0' || id.charAt(i) > '9')
+				return -1;
+
+		return Integer.parseInt(id);
+	}
+
+	public static String filterLink(String message) {
+		String link = "";
+		int pos = message.indexOf("#") + 1;
+
+		return pos < 0 ? link : message.substring(pos);
 	}
 }

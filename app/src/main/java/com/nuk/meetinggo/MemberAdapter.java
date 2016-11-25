@@ -27,12 +27,14 @@ import org.json.JSONObject;
 import static com.nuk.meetinggo.DataUtils.MEMBER_COLOUR;
 import static com.nuk.meetinggo.DataUtils.MEMBER_ID;
 import static com.nuk.meetinggo.DataUtils.MEMBER_NAME;
+import static com.nuk.meetinggo.MeetingInfo.getControlable;
 import static com.nuk.meetinggo.MeetingInfo.isChairman;
 import static com.nuk.meetinggo.MeetingInfo.isController;
 import static com.nuk.meetinggo.MeetingInfo.isPresenter;
 import static com.nuk.meetinggo.MemberFragment.checkedArray;
 import static com.nuk.meetinggo.MemberFragment.controlActive;
 import static com.nuk.meetinggo.MemberFragment.deleteActive;
+import static com.nuk.meetinggo.MeetingActivity.controlViewVisibility;
 
 /**
  * Adapter class for custom members ListView
@@ -134,6 +136,7 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                     if (isController(MemberInfo.memberID)) controllerButton.setVisibility(View.VISIBLE);
                     else controllerButton.setVisibility(View.GONE);
 
+                    // TODO remove chairman
                     if (isChairman(MemberInfo.memberID)) chairmanButton.setVisibility(View.VISIBLE);
                     else chairmanButton.setVisibility(View.GONE);
 
@@ -192,6 +195,11 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                                     public void onClick(DialogInterface dialog, int which) {
                                         // Set controller to member
                                         MeetingInfo.controller = finalId;
+
+                                        if (!getControlable(MemberInfo.memberID))
+                                            controlViewVisibility(false);
+                                        else
+                                            controlViewVisibility(true);
                                     }
                                 })
                                 .setNegativeButton(R.string.no_button, new DialogInterface.OnClickListener() {
@@ -217,6 +225,10 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                                         // Set controller to member
                                         MeetingInfo.chairman = finalId;
                                         // TODO update ui
+                                        if (!getControlable(MemberInfo.memberID))
+                                            controlViewVisibility(false);
+                                        else
+                                            controlViewVisibility(true);
                                     }
                                 })
                                 .setNegativeButton(R.string.no_button, new DialogInterface.OnClickListener() {
@@ -241,6 +253,10 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                                     public void onClick(DialogInterface dialog, int which) {
                                         // Set controller to member
                                         MeetingInfo.presenter = finalId;
+                                        if (!getControlable(MemberInfo.memberID))
+                                            controlViewVisibility(false);
+                                        else
+                                            controlViewVisibility(true);
                                     }
                                 })
                                 .setNegativeButton(R.string.no_button, new DialogInterface.OnClickListener() {

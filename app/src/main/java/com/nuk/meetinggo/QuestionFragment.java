@@ -12,6 +12,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
@@ -38,18 +39,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.nuk.meetinggo.DataUtils.ANSWER_ARRAY;
+import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
 import static com.nuk.meetinggo.DataUtils.NEW_QUESTION_REQUEST;
 import static com.nuk.meetinggo.DataUtils.QUESTIONS_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.QUESTION_BODY;
 import static com.nuk.meetinggo.DataUtils.QUESTION_COLOUR;
 import static com.nuk.meetinggo.DataUtils.QUESTION_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.QUESTION_FONT_SIZE;
+import static com.nuk.meetinggo.DataUtils.QUESTION_ID;
 import static com.nuk.meetinggo.DataUtils.QUESTION_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.QUESTION_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.QUESTION_TITLE;
 import static com.nuk.meetinggo.DataUtils.deleteQuestions;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
+import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 
 public class QuestionFragment extends Fragment implements AdapterView.OnItemClickListener,
@@ -733,6 +737,11 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
         private Boolean mLinkSuccess;
         private String mLinkData;
 
+        private final String CONTENT_OBJECT = "obj_question";
+        private final String CONTENT_TITLE = "head_question";
+        private final String CONTENT_ANSWER = "answer";
+        private final String CONTENT_ID = "question_id";
+
         LinkCloudTask(int request, int result, Bundle data) {
             requestCode = request;
             resultCode = result;
@@ -741,39 +750,141 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            if (resultData != null) {
-                // Link cloud to save, if success than add to array
-                try {
-                    Log.i("[QF]", "create question form");
-                    Map<String, String> form = new HashMap<>();
+            // Link cloud to save, if success than add to array
+            try {
 
-                    // TODO send data to cloud
-                    // Add new question to form
-                    form.put("question", resultData.getString(QUESTION_TITLE));
-                    //form.put("content", resultData.getString(QUESTION_BODY));
-                    //form.put(QUESTION_COLOUR, resultData.getString(QUESTION_COLOUR));
-                    //form.put(QUESTION_FAVOURED, false);
-                    //form.put(QUESTION_FONT_SIZE, resultData.getInt(QUESTION_FONT_SIZE));
-                    //form.put(QUESTION_HIDE_BODY, resultData.getBoolean(QUESTION_HIDE_BODY));
+                // Cloud question data
+                if (requestCode == CLOUD_UPDATE) {
+                    JSONObject request = new JSONObject(resultData.getString(CLOUD_UPDATE_CODE));
 
-                    // Save new question
-                    if (requestCode == NEW_QUESTION_REQUEST) {
-                        // Insert to database
-                        mLinkData = LinkCloud.submitFormPost(form, addQuestionLink);
-                        if (mLinkSuccess = LinkCloud.hasData())
-                            return true;
+                    JSONObject info = LinkCloud.getContent(request);
+                    Log.i("[QF]", "info:" + info.toString());
+
+                    JSONObject object = null;
+
+                    if (info.has(CONTENT_OBJECT)) {
+                        object = info.getJSONObject(CONTENT_OBJECT);
+
+                        JSONArray title = null;
+                        JSONArray answer = null;
+                        JSONArray id = null;
+                        if (object.has(CONTENT_TITLE))
+                            title = object.getJSONArray(CONTENT_TITLE);
+                        else
+                            Log.i("[QF]", "Fail to fetch field " + CONTENT_TITLE);
+
+                        if (object.has(CONTENT_ID))
+                            id = object.getJSONArray(CONTENT_ID);
+                        else
+                            Log.i("[QF]", "Fail to fetch field " + CONTENT_ID);
+
+                        if (object.has(CONTENT_ANSWER))
+                            answer = object.getJSONArray(CONTENT_ANSWER);
+                        else
+                            Log.i("[QF]", "Fail to fetch field " + CONTENT_ANSWER);
+
+                        if (title != null && id != null && answer != null) {
+                            if (title.length() == id.length()) {
+                                // Update questions, check question id is either existed or not
+                                // Yes -> update data, no -> add new question
+                                for(int i = 0; i < id.length(); i++) {
+                                    int position = -1;
+                                    for(int j = 0; j < questions.length(); j++) {
+                                        if(questions.getJSONObject(j).has(QUESTION_ID)
+                                                && id.getString(i).equals(questions.getJSONObject(j).getString(QUESTION_ID))) {
+                                            position = j;
+                                            break;
+                                        }
+                                    }
+
+                                    JSONObject question = null;
+                                    JSONArray questionAnswer = null;
+                                    // Add new question
+                                    if (position < 0) {
+                                        question = new JSONObject();
+                                        questionAnswer = new JSONArray();
+
+                                        // TODO add body
+                                        question.put(QUESTION_ID, id.getString(i));
+                                        question.put(QUESTION_TITLE, title.getString(i));
+                                        question.put(QUESTION_BODY, "");
+                                        question.put(QUESTION_COLOUR, "#FFFFFF");
+                                        question.put(QUESTION_FAVOURED, false);
+                                        question.put(QUESTION_FONT_SIZE, 18);
+
+                                        if (!TextUtils.isEmpty(answer.getString(i)))
+                                            questionAnswer.put(answer.getString(i));
+                                        question.put(ANSWER_ARRAY, questionAnswer);
+
+                                        questions.put(question);
+                                    }
+                                    // Update existed question
+                                    else {
+                                        question = questions.getJSONObject(position);
+                                        questionAnswer = question.getJSONArray(ANSWER_ARRAY);
+
+                                        // TODO update first message
+                                        if (!TextUtils.isEmpty(answer.getString(i)))
+                                            if (questionAnswer.length() > 0)
+                                                questionAnswer.put(0, answer.getString(i));
+                                            else
+                                                questionAnswer.put(answer.getString(i));
+
+                                        question.put(QUESTION_TITLE, title.getString(i));
+                                        question.put(ANSWER_ARRAY, questionAnswer);
+
+                                        questions.put(position, question);
+                                    }
+                                }
+
+                                Thread.sleep(2000);
+
+                                return true;
+                            }
+                            else
+                                Log.i("[QF]", "Field length aren't the same in array");
+                        }
+                        else
+                            Log.i("[QF]", "Loading object content error");
                     }
-                    // Update exsited question
-                    else {
-                        // Update database
-                        mLinkData = LinkCloud.submitFormPost(form, addQuestionLink);
-                        if (mLinkSuccess = LinkCloud.hasData())
-                            return true;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    else
+                        Log.i("[QF]", "No content key " + CONTENT_OBJECT);
                 }
+                
+                Log.i("[QF]", "create question form");
+                Map<String, String> form = new HashMap<>();
+
+                // TODO send data to cloud
+                // Add new question to form
+                form.put("question", resultData.getString(QUESTION_TITLE));
+                //form.put("content", resultData.getString(QUESTION_BODY));
+                //form.put(QUESTION_COLOUR, resultData.getString(QUESTION_COLOUR));
+                //form.put(QUESTION_FAVOURED, false);
+                //form.put(QUESTION_FONT_SIZE, resultData.getInt(QUESTION_FONT_SIZE));
+                //form.put(QUESTION_HIDE_BODY, resultData.getBoolean(QUESTION_HIDE_BODY));
+
+                // Save new question
+                if (requestCode == NEW_QUESTION_REQUEST) {
+                    // Insert to database
+                    mLinkData = LinkCloud.submitFormPost(form, addQuestionLink);
+                    if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
+                }
+                // Update exsited question
+                else {
+                    // Update database
+                    mLinkData = LinkCloud.submitFormPost(form, addQuestionLink);
+                    if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
+
             return false;
         }
 
@@ -782,8 +893,18 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
             linkTask = null;
 
             if(success) {
+                if (requestCode == CLOUD_UPDATE) {
+                    // Update question list view
+                    adapter.notifyDataSetChanged();
+
+                    if (questions.length() == 0)
+                        noQuestions.setVisibility(View.VISIBLE);
+                    else
+                        noQuestions.setVisibility(View.INVISIBLE);
+                }
+
                 // If new question was saved
-                if (requestCode == NEW_QUESTION_REQUEST) {
+                else if (requestCode == NEW_QUESTION_REQUEST) {
                     JSONObject newQuestionObject = null;
 
                     try {
@@ -834,6 +955,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         newQuestionObject.put(QUESTION_BODY, resultData.getString(QUESTION_BODY));
                         newQuestionObject.put(QUESTION_COLOUR, resultData.getString(QUESTION_COLOUR));
                         newQuestionObject.put(QUESTION_FONT_SIZE, resultData.getInt(QUESTION_FONT_SIZE));
+                        newQuestionObject.put(ANSWER_ARRAY, resultData.getString(ANSWER_ARRAY));
 
                         // Update question at position 'requestCode'
                         questions.put(requestCode, newQuestionObject);

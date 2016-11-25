@@ -1,5 +1,6 @@
 package com.nuk.meetinggo;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
 import static com.nuk.meetinggo.DataUtils.LIST_MEMBER_REQUEST;
 import static com.nuk.meetinggo.DataUtils.MEMBERS_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.MEMBER_COLOUR;
@@ -42,12 +44,13 @@ import static com.nuk.meetinggo.DataUtils.NEW_MEMBER_REQUEST;
 import static com.nuk.meetinggo.DataUtils.deleteMembers;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
+import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
 import static com.nuk.meetinggo.MeetingInfo.getControlable;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 
 public class MemberFragment extends Fragment implements AdapterView.OnItemClickListener,
         Toolbar.OnMenuItemClickListener, AbsListView.MultiChoiceModeListener,
-        SearchView.OnQueryTextListener {
+        SearchView.OnQueryTextListener, DetachableResultReceiver.Receiver {
 
     private static File localPath, backupPath;
 
@@ -76,6 +79,8 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
     private float newMemberButtonBaseYCoordinate; // Base Y coordinate of newMember button
 
     private AlertDialog addMemberDialog;
+
+    private DetachableResultReceiver mReceiver;
 
     private String addMemberLink = "back_end/meeting/set_info/set_meeting_topic.php?meeting_id=" + meetingID;
 
@@ -614,26 +619,169 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
     }
 
     /**
+     * Callback method when MeetingActivity finished adding new member or updating existing member
+     * @param requestCode requestCode for intent sent, in our case either NEW_MEMBER_REQUEST or position
+     * @param resultCode resultCode from activity, either RESULT_OK or RESULT_CANCELED
+     * @param resultData Data bundle passed back from MeetingActivity
+     */
+    @Override
+    public void onReceiveResult(int requestCode, int resultCode, Bundle resultData) {
+        if (resultCode == Activity.RESULT_OK) {
+            // If search was active -> call 'searchEnded' method
+            if (searchActive && searchMenu != null)
+                searchMenu.collapseActionView();
+
+            if (resultData != null) {
+                Log.i("[MF]", "do something");
+                linkTask = new LinkCloudTask(requestCode, resultCode, resultData);
+                linkTask.execute((Void) null);
+            }
+        }
+    }
+
+    /**
      * Represents an asynchronous link cloud task used to request/send data
      */
     public class LinkCloudTask extends AsyncTask<Void, Void, Boolean> {
 
         private int requestCode;
+        private int resultCode;
+        private Bundle resultData;
         private boolean[] checkArray;
         private ArrayList<Integer> selected = new ArrayList<>();
 
         private Boolean mLinkSuccess;
         private String mLinkData;
 
+        private final String CONTENT_OBJECT = "obj_meeting_member_list";
+        private final String CONTENT_NAME = "name";
+        private final String CONTENT_MAIL = "mail";
+        private final String CONTENT_ID = "member_id";
+        private final String CONTENT_ONLINE = "online";
+        private final String CONTNET_ONLINE_NUMBER = "now_meeting_member";
+
         LinkCloudTask(int request, boolean[] checked) {
             requestCode = request;
             checkArray = checked;
         }
 
+        LinkCloudTask(int request, int result, Bundle data) {
+            requestCode = request;
+            resultCode = result;
+            resultData = data;
+        }
+
         @Override
         protected Boolean doInBackground(Void... params) {
-            if(friends != null) {
-                if (requestCode == NEW_MEMBER_REQUEST) {
+
+            // Cloud member data
+            if (requestCode == CLOUD_UPDATE) {
+                JSONObject request = null;
+                try {
+                    request = new JSONObject(resultData.getString(CLOUD_UPDATE_CODE));
+
+                    JSONObject info = LinkCloud.getContent(request);
+                    Log.i("[MF]", "info:" + info.toString());
+
+                    JSONObject object = null;
+
+                    if (info.has(CONTENT_OBJECT)) {
+                        object = info.getJSONObject(CONTENT_OBJECT);
+
+                        JSONArray name = null;
+                        JSONArray id = null;
+                        JSONArray mail = null;
+                        JSONArray online = null;
+
+                        if (object.has(CONTENT_NAME))
+                            name = object.getJSONArray(CONTENT_NAME);
+                        else
+                            Log.i("[MF]", "Fail to fetch field " + CONTENT_NAME);
+
+                        if (object.has(CONTENT_ID))
+                            id = object.getJSONArray(CONTENT_ID);
+                        else
+                            Log.i("[MF]", "Fail to fetch field " + CONTENT_ID);
+
+                        if (object.has(CONTENT_MAIL))
+                            mail = object.getJSONArray(CONTENT_MAIL);
+                        else
+                            Log.i("[MF]", "Fail to fetch field " + CONTENT_MAIL);
+
+                        if (object.has(CONTENT_ONLINE))
+                            online = object.getJSONArray(CONTENT_ONLINE);
+                        else
+                            Log.i("[MF]", "Fail to fetch field " + CONTENT_ONLINE);
+
+                        if (name != null && id != null && mail != null && online != null) {
+                            if (name.length() == id.length()) {
+                                // Update members, check member id is either existed or not
+                                // Yes -> update data, no -> add new member
+                                for(int i = 0; i < id.length(); i++) {
+                                    int position = -1;
+                                    for(int j = 0; j < members.length(); j++) {
+                                        if(members.getJSONObject(j).has(MEMBER_ID)
+                                                && id.getString(i).equals(members.getJSONObject(j).getString(MEMBER_ID))) {
+                                            position = j;
+                                            break;
+                                        }
+                                    }
+
+                                    JSONObject member = null;
+                                    // Add new member
+                                    if (position < 0) {
+                                        member = new JSONObject();
+
+                                        // TODO add body
+                                        member.put(MEMBER_ID, id.getString(i));
+                                        member.put(MEMBER_NAME, name.getString(i));
+                                        member.put(MEMBER_EMAIL, mail.getString(i));
+
+                                        if (online.getInt(i) > 0)
+                                            member.put(MEMBER_COLOUR, "#FFFFFF");
+                                        else
+                                            member.put(MEMBER_COLOUR, "#F56545");
+
+                                        members.put(member);
+                                    }
+                                    // Update existed member
+                                    else {
+                                        member = members.getJSONObject(position);
+
+                                        member.put(MEMBER_NAME, name.getString(i));
+                                        member.put(MEMBER_EMAIL, mail.getString(i));
+
+                                        if (online.getInt(i) > 0)
+                                            member.put(MEMBER_COLOUR, "#FFFFFF");
+                                        else
+                                            member.put(MEMBER_COLOUR, "#F56545");
+
+
+                                        members.put(position, member);
+                                    }
+                                }
+
+                                Thread.sleep(2000);
+
+                                return true;
+                            }
+                            else
+                                Log.i("[MF]", "Field length aren't the same in array");
+                        }
+                        else
+                            Log.i("[MF]", "Loading object content error");
+                    }
+                    else
+                        Log.i("[MF]", "No content key " + CONTENT_OBJECT);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            else if (requestCode == NEW_MEMBER_REQUEST) {
+                if (friends != null) {
                     // Link cloud to save, if success than add to array
                     try {
                         Log.i("[MF]", "create member form");
@@ -660,9 +808,10 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                } else if (requestCode == LIST_MEMBER_REQUEST) {
-
                 }
+            }
+            else if (requestCode == LIST_MEMBER_REQUEST) {
+
             }
             return true;
         }
@@ -672,8 +821,12 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
             linkTask = null;
 
             if(success) {
+                if (requestCode == CLOUD_UPDATE) {
+                    // Update member list view
+                    adapter.notifyDataSetChanged();
+                }
                 // If new member was saved
-                if (requestCode == NEW_MEMBER_REQUEST) {
+                else if (requestCode == NEW_MEMBER_REQUEST) {
                     JSONObject newMemberObject = null;
                     JSONObject friendObject = new JSONObject();
 

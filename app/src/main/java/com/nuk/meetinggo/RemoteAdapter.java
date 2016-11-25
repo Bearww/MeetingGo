@@ -28,6 +28,8 @@ public class RemoteAdapter extends FragmentStatePagerAdapter {
             case 3:
                 PollFragment tab4 = new PollFragment();
                 return tab4;
+            case 4:
+                RecordFragment tab5 = new RecordFragment();
             default:
                 return null;
         }

@@ -38,6 +38,7 @@ public class RemoteActivity extends ActionBarActivity {
         tabLayout.addTab(tabLayout.newTab().setText("文件"));
         tabLayout.addTab(tabLayout.newTab().setText("提問"));
         tabLayout.addTab(tabLayout.newTab().setText("投票"));
+        tabLayout.addTab(tabLayout.newTab().setText("記錄"));
         tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 
         final ViewPager viewPager = (ViewPager) findViewById(R.id.pager);

@@ -1,4 +1,6 @@
 package com.nuk.meetinggo;
 
-public class EditPollFragment {
+import android.support.v4.app.Fragment;
+
+public class EditPollFragment extends Fragment {
 }

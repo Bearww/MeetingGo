@@ -43,10 +43,6 @@
             android:name=".AddDocument"
             android:label=""
             android:theme="@style/AppTheme" />
-        <activity
-            android:name=".ViewDocumentFragment"
-            android:label=""
-            android:theme="@style/AppTheme" />
 
         <!-- Test Activity -->
         <!--

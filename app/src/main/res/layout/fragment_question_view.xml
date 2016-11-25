@@ -124,7 +124,8 @@
         android:id="@+id/messageLayout"
         android:background="@color/white"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true">
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="50sp">
 
         <EditText
             android:layout_width="wrap_content"
@@ -138,7 +139,8 @@
             android:layout_toLeftOf="@+id/sendText"
             android:layout_toStartOf="@+id/sendText"
             android:layout_marginLeft="10sp"
-            android:layout_marginTop="5sp" />
+            android:layout_marginTop="5sp"
+            android:textColor="@color/black_95" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -148,7 +150,8 @@
             android:id="@+id/sendText"
             android:layout_centerVertical="true"
             android:layout_alignParentRight="true"
-            android:layout_marginRight="10sp" />
+            android:layout_marginRight="10sp"
+            android:textColor="@color/colorPrimary" />
 
     </RelativeLayout>
 

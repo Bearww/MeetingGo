@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
 import static com.nuk.meetinggo.DataUtils.NEW_POLL_REQUEST;
 import static com.nuk.meetinggo.DataUtils.POLLS_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.POLL_BODY;
@@ -45,12 +46,14 @@ import static com.nuk.meetinggo.DataUtils.POLL_ENABLED;
 import static com.nuk.meetinggo.DataUtils.POLL_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.POLL_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.POLL_HIDE_BODY;
+import static com.nuk.meetinggo.DataUtils.POLL_ID;
 import static com.nuk.meetinggo.DataUtils.POLL_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.POLL_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.POLL_TITLE;
 import static com.nuk.meetinggo.DataUtils.deletePolls;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
+import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 
 public class PollFragment extends Fragment implements AdapterView.OnItemClickListener,
@@ -158,7 +161,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         });
 
 
-        // If newPoll button clicked -> Start EditNoteFragment intent with NEW_POLL_REQUEST as request
+        // If newPoll button clicked -> Start EditPollFragment intent with NEW_POLL_REQUEST as request
         newPoll.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -259,7 +262,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         // If poll array not empty -> continue
-                        // Check question field is not empty
+                        // Check poll field is not empty
                         EditText pollTitle = (EditText) view.findViewById(R.id.pollTitle);
                         EditText pollBody = (EditText) view.findViewById(R.id.pollBody);
 
@@ -321,23 +324,23 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
     }
 
     /**
-     * If item clicked in list view -> Start EditNoteFragment intent with position as requestCode
+     * If item clicked in list view -> Start EditPollFragment intent with position as requestCode
      */
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         // Create fragment and give it an argument
-        EditNoteFragment nextFragment = new EditNoteFragment();
+        EditPollFragment nextFragment = new EditPollFragment();
         Bundle args = new Bundle();
         args.putInt(POLL_REQUEST_CODE, NEW_POLL_REQUEST);
         args.putParcelable(POLL_RECEIVER, mReceiver);
         Log.i("[PF]", "Put receiver " + mReceiver.toString());
 
-        // If search is active -> use position from realIndexesOfSearchResults for EditNoteFragment
+        // If search is active -> use position from realIndexesOfSearchResults for EditPollFragment
         if (searchActive) {
             int newPosition = realIndexesOfSearchResults.get(position);
 
             try {
-                // Package selected poll content and send to EditNoteFragment
+                // Package selected poll content and send to EditPollFragment
                 args.putString(POLL_TITLE, polls.getJSONObject(newPosition).getString(POLL_TITLE));
                 args.putString(POLL_BODY, polls.getJSONObject(newPosition).getString(POLL_BODY));
                 args.putString(POLL_COLOUR, polls.getJSONObject(newPosition).getString(POLL_COLOUR));
@@ -749,10 +752,10 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
     }
 
     /**
-     * Callback method when EditNoteFragment finished adding new poll or editing existing poll
+     * Callback method when EditPollFragment finished adding new poll or editing existing poll
      * @param requestCode requestCode for intent sent, in our case either NEW_POLL_REQUEST or position
      * @param resultCode resultCode from activity, either RESULT_OK or RESULT_CANCELED
-     * @param resultData Data bundle passed back from EditNoteFragment
+     * @param resultData Data bundle passed back from EditPollFragment
      */
     @Override
     public void onReceiveResult(int requestCode, int resultCode, Bundle resultData) {
@@ -799,51 +802,141 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
         private int requestCode;
         private int resultCode;
-        private Bundle mBundle;
+        private Bundle resultData;
 
         private Boolean mLinkSuccess;
         private String mLinkData;
 
-        LinkCloudTask(int request, int result, Bundle bundle) {
+        private final String CONTENT_OBJECT = "obj_voting_result";
+        private final String CONTENT_TITLE = "head_issue";
+        private final String CONTENT_ID = "issue_id";
+        private final String CONTENT_COUNT = "member_vote";
+
+        LinkCloudTask(int request, int result, Bundle data) {
             requestCode = request;
             resultCode = result;
-            mBundle = bundle;
+            resultData = data;
         }
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            if (mBundle != null) {
-                // Link cloud to save, if success than add to array
-                try {
-                    Log.i("[PF]", "create poll form");
-                    Map<String, String> form = new HashMap<>();
+            // Link cloud to save, if success than add to array
+            try {
+                // Cloud poll data
+                if (requestCode == CLOUD_UPDATE) {
+                    JSONObject request = new JSONObject(resultData.getString(CLOUD_UPDATE_CODE));
 
-                    // Add new note to form
-                    form.put("issue", mBundle.getString(POLL_TITLE));
-                    //form.put("content", resultData.getString(NOTE_BODY));
-                    //form.put(NOTE_COLOUR, resultData.getString(NOTE_COLOUR));
-                    //form.put(NOTE_FAVOURED, false);
-                    //form.put(NOTE_FONT_SIZE, resultData.getInt(NOTE_FONT_SIZE));
-                    //form.put(NOTE_HIDE_BODY, resultData.getBoolean(NOTE_HIDE_BODY));
+                    JSONObject info = LinkCloud.getContent(request);
+                    Log.i("[PF]", "info:" + info.toString());
 
-                    // Save new note
-                    if (requestCode == NEW_POLL_REQUEST) {
-                        // Insert to database
-                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
-                        if (mLinkSuccess = LinkCloud.hasData())
-                            return true;
+                    JSONObject object = null;
+
+                    if (info.has(CONTENT_OBJECT)) {
+                        object = info.getJSONObject(CONTENT_OBJECT);
+
+                        JSONArray title = null;
+                        JSONArray id = null;
+                        JSONArray count = null;
+                        if (object.has(CONTENT_TITLE))
+                            title = object.getJSONArray(CONTENT_TITLE);
+                        else
+                            Log.i("[PF]", "Fail to fetch field " + CONTENT_TITLE);
+
+                        if (object.has(CONTENT_ID))
+                            id = object.getJSONArray(CONTENT_ID);
+                        else
+                            Log.i("[PF]", "Fail to fetch field " + CONTENT_ID);
+
+                        if (object.has(CONTENT_COUNT))
+                            count = object.getJSONArray(CONTENT_COUNT);
+                        else
+                            Log.i("[PF]", "Fail to fetch field " + CONTENT_COUNT);
+
+                        if (title != null && id != null && count != null) {
+                            if (title.length() == id.length()) {
+                                // Update polls, check poll id is either existed or not
+                                // Yes -> update data, no -> add new poll
+                                for(int i = 0; i < id.length(); i++) {
+                                    int position = -1;
+                                    for(int j = 0; j < polls.length(); j++) {
+                                        if(polls.getJSONObject(j).has(POLL_ID)
+                                                && id.getString(i).equals(polls.getJSONObject(j).getString(POLL_ID))) {
+                                            position = j;
+                                            break;
+                                        }
+                                    }
+
+                                    JSONObject poll = null;
+                                    // Add new poll
+                                    if (position < 0) {
+                                        poll = new JSONObject();
+
+                                        // TODO add body
+                                        poll.put(POLL_ID, id.getString(i));
+                                        poll.put(POLL_TITLE, title.getString(i));
+                                        poll.put(POLL_BODY, "");
+                                        poll.put(POLL_COLOUR, "#FFFFFF");
+                                        poll.put(POLL_FAVOURED, false);
+                                        poll.put(POLL_FONT_SIZE, 18);
+
+                                        polls.put(poll);
+                                    }
+                                    // Update existed poll
+                                    else {
+                                        poll = polls.getJSONObject(position);
+
+                                        poll.put(POLL_TITLE, title.getString(i));
+
+                                        polls.put(position, poll);
+                                    }
+                                }
+
+                                Thread.sleep(2000);
+
+                                return true;
+                            }
+                            else
+                                Log.i("[PF]", "Field length aren't the same in array");
+                        }
+                        else
+                            Log.i("[PF]", "Loading object content error");
                     }
-                    // Update exsited note
-                    else {
-                        // TODO change add to update poll in database
-                        // Update database
-                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
-                        if (mLinkSuccess = LinkCloud.hasData())
-                            return true;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    else
+                        Log.i("[PF]", "No content key " + CONTENT_OBJECT);
                 }
+                
+                Log.i("[PF]", "create poll form");
+                Map<String, String> form = new HashMap<>();
+
+                // Add new poll to form
+                form.put("issue", resultData.getString(POLL_TITLE));
+                //form.put("content", resultData.getString(NOTE_BODY));
+                //form.put(NOTE_COLOUR, resultData.getString(NOTE_COLOUR));
+                //form.put(NOTE_FAVOURED, false);
+                //form.put(NOTE_FONT_SIZE, resultData.getInt(NOTE_FONT_SIZE));
+                //form.put(NOTE_HIDE_BODY, resultData.getBoolean(NOTE_HIDE_BODY));
+
+                // Save new poll
+                if (requestCode == NEW_POLL_REQUEST) {
+                    // Insert to database
+                    mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
+                    if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
+                }
+                // Update exsited poll
+                else {
+                    // TODO change add to update poll in database
+                    // Update database
+                    mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
+                    if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
             return false;
         }
@@ -853,19 +946,29 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
             linkTask = null;
 
             if(success) {
-                // If new note was saved
-                if (requestCode == NEW_POLL_REQUEST) {
+                if (requestCode == CLOUD_UPDATE) {
+                    // Update poll list view
+                    adapter.notifyDataSetChanged();
+
+                    if (polls.length() == 0)
+                        noPolls.setVisibility(View.VISIBLE);
+                    else
+                        noPolls.setVisibility(View.INVISIBLE);
+                }
+
+                // If new poll was saved
+                else if (requestCode == NEW_POLL_REQUEST) {
                     JSONObject newPollObject = null;
 
                     try {
                         // Add new poll to array
                         newPollObject = new JSONObject();
-                        newPollObject.put(POLL_TITLE, mBundle.getString(POLL_TITLE));
-                        newPollObject.put(POLL_BODY, mBundle.getString(POLL_BODY));
-                        newPollObject.put(POLL_COLOUR, mBundle.getString(POLL_COLOUR));
+                        newPollObject.put(POLL_TITLE, resultData.getString(POLL_TITLE));
+                        newPollObject.put(POLL_BODY, resultData.getString(POLL_BODY));
+                        newPollObject.put(POLL_COLOUR, resultData.getString(POLL_COLOUR));
                         newPollObject.put(POLL_FAVOURED, false);
-                        newPollObject.put(POLL_FONT_SIZE, mBundle.getInt(POLL_FONT_SIZE));
-                        newPollObject.put(POLL_HIDE_BODY, mBundle.getBoolean(POLL_HIDE_BODY));
+                        newPollObject.put(POLL_FONT_SIZE, resultData.getInt(POLL_FONT_SIZE));
+                        newPollObject.put(POLL_HIDE_BODY, resultData.getBoolean(POLL_HIDE_BODY));
 
                         polls.put(newPollObject);
 
@@ -902,11 +1005,11 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                     try {
                         // Update array item with new poll data
                         newPollObject = polls.getJSONObject(requestCode);
-                        newPollObject.put(POLL_TITLE, mBundle.getString(POLL_TITLE));
-                        newPollObject.put(POLL_BODY, mBundle.getString(POLL_BODY));
-                        newPollObject.put(POLL_COLOUR, mBundle.getString(POLL_COLOUR));
-                        newPollObject.put(POLL_FONT_SIZE, mBundle.getInt(POLL_FONT_SIZE));
-                        newPollObject.put(POLL_HIDE_BODY, mBundle.getBoolean(POLL_HIDE_BODY));
+                        newPollObject.put(POLL_TITLE, resultData.getString(POLL_TITLE));
+                        newPollObject.put(POLL_BODY, resultData.getString(POLL_BODY));
+                        newPollObject.put(POLL_COLOUR, resultData.getString(POLL_COLOUR));
+                        newPollObject.put(POLL_FONT_SIZE, resultData.getInt(POLL_FONT_SIZE));
+                        newPollObject.put(POLL_HIDE_BODY, resultData.getBoolean(POLL_HIDE_BODY));
 
                         // Update poll at position 'requestCode'
                         polls.put(requestCode, newPollObject);
