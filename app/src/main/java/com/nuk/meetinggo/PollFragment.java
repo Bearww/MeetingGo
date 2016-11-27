@@ -39,6 +39,7 @@ import java.util.Map;
 
 import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
 import static com.nuk.meetinggo.DataUtils.NEW_POLL_REQUEST;
+import static com.nuk.meetinggo.DataUtils.OPTION_ARRAY;
 import static com.nuk.meetinggo.DataUtils.POLLS_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.POLL_BODY;
 import static com.nuk.meetinggo.DataUtils.POLL_COLOUR;
@@ -282,6 +283,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                                 newPollObject.put(POLL_FONT_SIZE, 18);
                                 newPollObject.put(POLL_HIDE_BODY, false);
                                 newPollObject.put(POLL_ENABLED, false);
+                                newPollObject.put(OPTION_ARRAY, new JSONArray());
 
                                 polls.put(newPollObject);
 

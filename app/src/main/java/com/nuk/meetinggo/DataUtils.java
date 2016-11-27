@@ -80,6 +80,10 @@ public class DataUtils {
     public static final String POLL_RECEIVER = "receiver";
     public static final String POLL_ENABLED = "enabled";
 
+    public static final String OPTION_ARRAY = "array";
+    public static final String OPTION_CONTENT = "content";
+    public static final String OPTION_VOTES = "votes";
+
     // Member data constants used in intents and in key-value store
     public static final int NEW_MEMBER_REQUEST = 80000;
     public static final int LIST_MEMBER_REQUEST = 70001;
@@ -354,6 +358,33 @@ public class DataUtils {
 
         // Finally, return the new polls
         return newPolls;
+    }
+
+    /**
+     * Create new JSONArray of options from 'from' without the options at positions in 'selectedOptions'
+     * @param from Main options array to delete from
+     * @param selectedOptions ArrayList of Integer which represent option positions to be deleted
+     * @return New JSONArray of options without the options at positions 'selectedOptions'
+     */
+    public static JSONArray deleteOptions(JSONArray from, ArrayList<Integer> selectedOptions) {
+        // Init new JSONArray
+        JSONArray newOptions = new JSONArray();
+
+        // Loop through main options
+        for (int i = 0; i < from.length(); i++) {
+            // If array of positions to delete doesn't contain current position -> put in new array
+            if (!selectedOptions.contains(i)) {
+                try {
+                    newOptions.put(from.get(i));
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        // Finally, return the new options
+        return newOptions;
     }
 
     /**

@@ -69,8 +69,13 @@
             android:name=".CreateMeetingActivity"
             android:label="建立會議"
             android:theme="@style/AppTheme" />
-        <activity android:name=".GroupActivity"
+        <activity
+            android:name=".GroupActivity"
             android:label="建立會議"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
             android:theme="@style/AppTheme" />
     </application>
 

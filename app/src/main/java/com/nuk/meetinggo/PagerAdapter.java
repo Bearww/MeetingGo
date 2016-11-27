@@ -49,7 +49,7 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
                     tab6 = new RecordFragment();
                 return tab6;
             case 6:
-                TabFragment3 tab7 = new TabFragment3();
+                SettingFragment tab7 = new SettingFragment();
                 return tab7;
             default:
                 return null;
