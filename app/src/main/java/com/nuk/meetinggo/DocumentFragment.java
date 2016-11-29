@@ -804,6 +804,15 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                     // Update document list view
                     adapter.notifyDataSetChanged();
 
+                    Boolean saveSuccessful = saveData(localPath, documents);
+
+                    if (saveSuccessful) {
+                        Toast toast = Toast.makeText(getContext(),
+                                getResources().getString(R.string.toast_new_document),
+                                Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+
                     // If no documents -> show 'Press + to add new document text, invisible otherwise
                     if(documents.length() == 0)
                         noDocuments.setVisibility(View.VISIBLE);

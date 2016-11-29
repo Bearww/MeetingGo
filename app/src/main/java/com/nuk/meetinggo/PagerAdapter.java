@@ -12,7 +12,7 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
     DocumentFragment tab3;
     QuestionFragment tab4;
     PollFragment tab5;
-    RecordFragment tab6;
+    SettingFragment tab6;
 
     public PagerAdapter(FragmentManager fm, int NumOfTabs) {
         super(fm);
@@ -46,11 +46,8 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
                 return tab5;
             case 5:
                 if (tab6 == null)
-                    tab6 = new RecordFragment();
+                    tab6 = new SettingFragment();
                 return tab6;
-            case 6:
-                SettingFragment tab7 = new SettingFragment();
-                return tab7;
             default:
                 return null;
         }

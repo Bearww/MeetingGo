@@ -57,7 +57,7 @@ public class CloudListener implements Runnable {
     }
 
     public void run() {
-        int requests = 10000 / requestsPerSecond;
+        int requests = 3000 / requestsPerSecond;
 
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(linkCloudTask, 0, requests);

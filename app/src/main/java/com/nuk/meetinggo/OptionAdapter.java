@@ -5,8 +5,10 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -14,13 +16,20 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListAdapter;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import static com.nuk.meetinggo.DataUtils.OPTION_CONTENT;
+import static com.nuk.meetinggo.EditPollFragment.addOption;
+import static com.nuk.meetinggo.EditPollFragment.changeOption;
 import static com.nuk.meetinggo.EditPollFragment.deleteOption;
+import static com.nuk.meetinggo.EditPollFragment.isLastOption;
+import static com.nuk.meetinggo.EditPollFragment.optionChanged;
+import static com.nuk.meetinggo.ViewPollFragment.checkedArray;
+import static com.nuk.meetinggo.PollFragment.editActive;
 
 /**
  * Adapter class for custom options ListView
@@ -77,11 +86,12 @@ public class OptionAdapter extends BaseAdapter implements ListAdapter {
         // Initialize layout items
         RelativeLayout relativeLayout = (RelativeLayout) convertView.findViewById(R.id.relativeLayout);
         LayerDrawable roundedCard = (LayerDrawable) context.getResources().getDrawable(R.drawable.rounded_card);
-        EditText bodyView = (EditText) convertView.findViewById(R.id.optionText);
+        final EditText bodyText = (EditText) convertView.findViewById(R.id.optionText);
+        TextView bodyView = (TextView) convertView.findViewById(R.id.optionView);
         ImageButton delete = (ImageButton) convertView.findViewById(R.id.delete);
 
-        // Get Ask object at position
-        JSONObject optionObject = getItem(position);
+        // Get Option object at position
+        final JSONObject optionObject = getItem(position);
 
         if (optionObject != null) {
             // If optionObject not empty -> initialize variables
@@ -97,17 +107,71 @@ public class OptionAdapter extends BaseAdapter implements ListAdapter {
                 e.printStackTrace();
             }
 
-            bodyView.setVisibility(View.VISIBLE);
-            bodyView.setText(body);
-            bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
+            if (editActive) {
+                bodyText.setVisibility(View.VISIBLE);
+                bodyText.setText(body);
+                bodyText.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
+                bodyText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                    @Override
+                    public void onFocusChange(View v, boolean hasFocus) {
+                        if (!hasFocus) {
+                            changeOption(position, bodyText.getText().toString());
 
-            ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                    .setColor(Color.parseColor(colour));
+                            if (isLastOption(position) && !TextUtils.isEmpty(bodyText.getText().toString())) {
+                                addOption();
+                                optionChanged();
+                            }
+                        }
+                    }
+                });
+                bodyText.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (v instanceof EditText) {
+                            v.setFocusable(true);
+                            v.setFocusableInTouchMode(true);
+                        } else {
+                            bodyText.setFocusable(false);
+                            bodyText.setFocusableInTouchMode(false);
+                        }
+                        return false;
+                    }
+                });
+
+                bodyView.setVisibility(View.INVISIBLE);
+            }
+            else {
+                bodyText.setVisibility(View.INVISIBLE);
+                bodyView.setVisibility(View.VISIBLE);
+                bodyView.setText(body);
+                bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
+            }
+
+            // If current note is selected for deletion -> highlight
+            if (checkedArray.contains(position)) {
+                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                        .setColor(context.getResources().getColor(R.color.theme_primary));
+            }
+
+            // If current note is not selected -> set background colour to normal
+            else {
+                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                        .setColor(Color.parseColor(colour));
+            }
 
             // Set option background style to rounded card
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 relativeLayout.setBackground(roundedCard);
             }
+
+            if (editActive) {
+                if (isLastOption(position))
+                    delete.setVisibility(View.INVISIBLE);
+                else
+                    delete.setVisibility(View.VISIBLE);
+            }
+            else
+                delete.setVisibility(View.INVISIBLE);
 
             delete.setOnClickListener(new View.OnClickListener() {
                 // If favourite button was clicked -> change that option to favourite or un-favourite

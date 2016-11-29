@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import static com.nuk.meetinggo.DataUtils.NEW_RECORD_REQUEST;
+import static com.nuk.meetinggo.DataUtils.NOTE_BODY;
 import static com.nuk.meetinggo.DataUtils.RECORDS_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.RECORD_BODY;
 import static com.nuk.meetinggo.DataUtils.RECORD_FAVOURED;
@@ -56,6 +57,7 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
     // Layout components
     private static ListView listView;
     private ImageButton newRecord;
+    private TextView bodyView;
     private TextView noRecords;
     private Toolbar toolbar;
     private MenuItem searchMenu;
@@ -70,6 +72,8 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
     // For disabling long clicks, favourite clicks and modifying the item click pattern
     public static boolean searchActive = false;
     private ArrayList<Integer> realIndexesOfSearchResults; // To keep track of real indexes in searched records
+
+    private Bundle bundle;
 
     private int lastFirstVisibleItem = -1; // Last first item seen in list view scroll changed
     private float newRecordButtonBaseYCoordinate; // Base Y coordinate of newRecord button
@@ -114,11 +118,19 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
         listView = (ListView) view.findViewById(R.id.listView);
+        bodyView = (TextView) view.findViewById(R.id.bodyView);
         newRecord = (ImageButton) view.findViewById(R.id.newRecord);
         noRecords = (TextView) view.findViewById(R.id.noRecords);
 
         if (toolbar != null)
             initToolbar();
+
+        // Get data bundle from MainFragment
+        bundle = getArguments();
+
+        if (bundle != null) {
+            bodyView.setText(bundle.getString(NOTE_BODY));
+        }
 
         newRecordButtonBaseYCoordinate = newRecord.getY();
 

@@ -33,10 +33,12 @@
         <activity
             android:name=".RemoteActivity"
             android:label="@string/title_activity_remote"
+            android:windowSoftInputMode="adjustPan"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".MeetingActivity"
             android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustPan"
             android:label="@string/title_item_list"
             android:theme="@style/AppTheme" />
         <activity
@@ -72,10 +74,6 @@
         <activity
             android:name=".GroupActivity"
             android:label="建立會議"
-            android:theme="@style/AppTheme" />
-        <activity
-            android:name=".SettingsActivity"
-            android:label="@string/title_activity_settings"
             android:theme="@style/AppTheme" />
     </application>
 

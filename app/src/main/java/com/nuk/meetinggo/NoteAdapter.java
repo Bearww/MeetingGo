@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -128,6 +129,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
                 e.printStackTrace();
             }
 
+
             // Set favourite image resource
             if (favoured)
                 favourite.setImageResource(R.mipmap.ic_fav);
@@ -193,10 +195,16 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
             });
 
             final int finalID = id;
+            final String finalBody = body;
             control.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    Bundle bundle = new Bundle();
+
+                    bundle.putString(NOTE_BODY, finalBody);
+
                     Intent intent = new Intent(context, RemoteActivity.class);
+                    intent.putExtras(bundle);
                     topicID = finalID;
                     context.startActivity(intent);
                 }

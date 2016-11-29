@@ -824,6 +824,15 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
                 if (requestCode == CLOUD_UPDATE) {
                     // Update member list view
                     adapter.notifyDataSetChanged();
+
+                    Boolean saveSuccessful = saveData(localPath, members);
+
+                    if (saveSuccessful) {
+                        Toast toast = Toast.makeText(getContext(),
+                                getResources().getString(R.string.toast_new_member),
+                                Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
                 }
                 // If new member was saved
                 else if (requestCode == NEW_MEMBER_REQUEST) {

@@ -906,6 +906,15 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                     // Update question list view
                     adapter.notifyDataSetChanged();
 
+                    Boolean saveSuccessful = saveData(localPath, questions);
+
+                    if (saveSuccessful) {
+                        Toast toast = Toast.makeText(getContext(),
+                                getResources().getString(R.string.toast_question_saved),
+                                Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+
                     if (questions.length() == 0)
                         noQuestions.setVisibility(View.VISIBLE);
                     else

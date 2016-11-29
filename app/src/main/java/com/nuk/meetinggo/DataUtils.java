@@ -71,8 +71,10 @@ public class DataUtils {
     public static final int NEW_POLL_REQUEST = 70000;
     public static final String POLL_REQUEST_CODE = "requestCode";
     public static final String POLL_ID = "id";
+    public static final String POLL_TOPIC = "topic";
     public static final String POLL_TITLE = "title";
     public static final String POLL_BODY = "body";
+    public static final String POLL_CHECK = "check";
     public static final String POLL_COLOUR = "colour";
     public static final String POLL_FAVOURED = "favoured";
     public static final String POLL_FONT_SIZE = "fontSize";
@@ -81,6 +83,7 @@ public class DataUtils {
     public static final String POLL_ENABLED = "enabled";
 
     public static final String OPTION_ARRAY = "array";
+    public static final String OPTION_ID = "id";
     public static final String OPTION_CONTENT = "content";
     public static final String OPTION_VOTES = "votes";
 

@@ -5,6 +5,9 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,16 +24,20 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.nuk.meetinggo.DataUtils.OPTION_ARRAY;
 import static com.nuk.meetinggo.DataUtils.POLL_BODY;
 import static com.nuk.meetinggo.DataUtils.POLL_COLOUR;
+import static com.nuk.meetinggo.DataUtils.POLL_ENABLED;
 import static com.nuk.meetinggo.DataUtils.POLL_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.POLL_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.POLL_HIDE_BODY;
+import static com.nuk.meetinggo.DataUtils.POLL_RECEIVER;
+import static com.nuk.meetinggo.DataUtils.POLL_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.POLL_TITLE;
-import static com.nuk.meetinggo.DataUtils.POLL_ENABLED;
 import static com.nuk.meetinggo.MeetingInfo.getControllable;
 import static com.nuk.meetinggo.PollFragment.checkedArray;
 import static com.nuk.meetinggo.PollFragment.deleteActive;
+import static com.nuk.meetinggo.PollFragment.editActive;
 import static com.nuk.meetinggo.PollFragment.searchActive;
 import static com.nuk.meetinggo.PollFragment.setFavourite;
 import static com.nuk.meetinggo.PollFragment.setMode;
@@ -42,15 +49,19 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
     private Context context;
     private JSONArray adapterData;
     private LayoutInflater inflater;
+    private FragmentManager manager;
+    private DetachableResultReceiver receiver;
 
     /**
      * Adapter constructor -> Sets class variables
      * @param context application context
      * @param adapterData JSONArray of polls
      */
-    public PollAdapter(Context context, JSONArray adapterData) {
+    public PollAdapter(Context context, JSONArray adapterData, FragmentManager manager, DetachableResultReceiver receiver) {
         this.context = context;
         this.adapterData = adapterData;
+        this.manager = manager;
+        this.receiver = receiver;
         this.inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
@@ -93,11 +104,11 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
         TextView titleView = (TextView) convertView.findViewById(R.id.titleView);
         TextView bodyView = (TextView) convertView.findViewById(R.id.bodyView);
         ImageButton favourite = (ImageButton) convertView.findViewById(R.id.favourite);
-        ImageButton check = (ImageButton) convertView.findViewById(R.id.check);
+        ImageButton edit = (ImageButton) convertView.findViewById(R.id.edit);
         Switch pollSwitch = (Switch) convertView.findViewById(R.id.pollSwitch);
 
         // Get Note object at position
-        JSONObject pollObject = getItem(position);
+        final JSONObject pollObject = getItem(position);
 
         if (pollObject != null) {
             // Check presenter or controller
@@ -110,7 +121,6 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
             int fontSize = 18;
             Boolean hideBody = false;
             Boolean favoured = false;
-            Boolean checked = false;
             Boolean enabled = false;
 
             try {
@@ -144,20 +154,22 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
                 favourite.setImageResource(R.mipmap.ic_unfav);
 
             // Set check image resource
-            if (checked)
-                check.setImageResource(R.drawable.ic_check_box_black_24dp);
-            else
-                check.setImageResource(R.drawable.ic_check_box_outline_blank_black_24dp);
+            if (getControllable(MemberInfo.memberID)) {
+                edit.setVisibility(View.VISIBLE);
+                pollSwitch.setVisibility(View.VISIBLE);
+            }
+            else {
+                edit.setVisibility(View.INVISIBLE);
+                pollSwitch.setVisibility(View.VISIBLE);
+            }
 
             // If search or delete modes are active -> hide favourite button; Show otherwise
             if (searchActive || deleteActive) {
                 favourite.setVisibility(View.INVISIBLE);
-                check.setVisibility(View.INVISIBLE);
                 if(controlled) pollSwitch.setVisibility(View.INVISIBLE);
             }
             else {
                 favourite.setVisibility(View.VISIBLE);
-                check.setVisibility(View.VISIBLE);
                 if(controlled) pollSwitch.setVisibility(View.VISIBLE);
             }
 
@@ -212,6 +224,48 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     setMode(isChecked, position);
+                }
+            });
+            
+            edit.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    editActive = true;
+
+                    // Create fragment and give it an argument
+                    EditPollFragment nextFragment = new EditPollFragment();
+                    Bundle args = new Bundle();
+                    args.putInt(POLL_REQUEST_CODE, position);
+                    args.putParcelable(POLL_RECEIVER, receiver);
+
+                    // Package selected poll content and send to EditPollFragment
+                    try {
+                        args.putString(POLL_TITLE, pollObject.getString(POLL_TITLE));
+                        args.putString(POLL_BODY, pollObject.getString(POLL_BODY));
+                        args.putString(POLL_COLOUR, pollObject.getString(POLL_COLOUR));
+                        args.putInt(POLL_FONT_SIZE, pollObject.getInt(POLL_FONT_SIZE));
+                        args.putString(OPTION_ARRAY, pollObject.getString(OPTION_ARRAY));
+
+                        if (pollObject.has(POLL_HIDE_BODY))
+                            args.putBoolean(POLL_HIDE_BODY, pollObject.getBoolean(POLL_HIDE_BODY));
+
+                        else
+                            args.putBoolean(POLL_HIDE_BODY, false);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                    nextFragment.setArguments(args);
+
+                    FragmentTransaction transaction = manager.beginTransaction();
+
+                    // Replace whatever is in the fragment_container view with this fragment,
+                    // and add the transaction to the back stack so the user can navigate back
+                    transaction.replace(R.id.layout_container, nextFragment);
+                    transaction.addToBackStack(null);
+
+                    // Commit the transaction
+                    transaction.commit();
                 }
             });
         }

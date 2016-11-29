@@ -370,7 +370,7 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
                 // Show a progress spinner, and try to connect to server in another thread.
                 showProgress(true);
                 connectServerTask = new ConnectServerTask();
-                connectServerTask.execute(Constants.SERVER_IP);
+                connectServerTask.execute(LinkCloud.SERVER_IP);
 
                 listener = new Thread(new ImageListener(Constants.LISTEN_PORT, Constants.FRAMES_PER_SECOND, messageHandler));
                 listener.start();

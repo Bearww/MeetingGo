@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/relativeLayoutView"
+    android:background="@color/white"
+    android:animateLayoutChanges="true" >
+
+    <include
+        android:id="@+id/toolbarView"
+        layout="@layout/toolbar" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:id="@+id/titleText"
+        android:background="@color/black_10"
+        android:layout_below="@+id/toolbarView"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:gravity="center"
+        android:hint="@string/poll_title"
+        android:maxLines="1"
+        android:maxLength="30"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:textColorHint="@color/black_50"
+        android:textColor="@color/black_95" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/scrollView"
+        android:background="@color/transparent"
+        android:layout_below="@+id/titleText"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:clipToPadding="false"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp" >
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/bodyText"
+            android:background="@color/transparent"
+            android:gravity="start|end"
+            android:ems="10"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:hint="@string/poll_body"
+            android:maxLines="2000"
+            android:textSize="18sp"
+            android:textColorHint="@color/black_50"
+            android:textColor="@color/black_95" />
+
+    </ScrollView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/shadow_elevation"
+        android:layout_below="@+id/toolbarView"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentLeft="true"
+        android:background="@drawable/drop_shadow"
+        android:id="@+id/view" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="Options"
+        android:id="@+id/optionText"
+        android:layout_below="@+id/scrollView"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="5sp"
+        android:layout_marginLeft="10sp"
+        android:textColor="@color/black_20" />
+
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/listView"
+        android:divider="@color/black_20"
+        android:dividerHeight="5dp"
+        android:drawSelectorOnTop="true"
+        android:fastScrollEnabled="true"
+        android:scrollbarStyle="outsideOverlay"
+        android:paddingRight="16dp"
+        android:paddingLeft="16dp"
+        android:clipToPadding="false"
+        android:layout_below="@+id/optionText"
+        android:layout_alignLeft="@+id/optionText"
+        android:layout_alignStart="@+id/optionText"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp" />
+
+    <ImageButton
+        android:layout_width="65dp"
+        android:layout_height="65dp"
+        android:id="@+id/sendPoll"
+        android:scaleType="fitXY"
+        android:background="@drawable/ic_move_to_inbox_black_24dp"
+        android:layout_marginBottom="30dp"
+        android:layout_marginRight="30dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:contentDescription="@string/send_poll_content_description" />
+
+</RelativeLayout>

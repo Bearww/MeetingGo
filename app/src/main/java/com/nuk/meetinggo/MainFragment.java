@@ -227,8 +227,6 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         else
             noNotes.setVisibility(View.INVISIBLE);
 
-
-
         initDialogs(getContext());
 
         return view;
@@ -509,13 +507,13 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         }
 */
         // Get control
-        Boolean controlable = getControllable(MemberInfo.memberID);
+        Boolean controllable = getControllable(MemberInfo.memberID);
 
         // Create fragment and give it an argument
         EditNoteFragment editFragment = null;
         ViewNoteFragment viewFragment = null;
 
-        if(controlable)
+        if(controllable)
             editFragment = new EditNoteFragment();
         else
             viewFragment = new ViewNoteFragment();
@@ -576,7 +574,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
             args.putInt(NOTE_REQUEST_CODE, position);
         }
 
-        if (controlable)
+        if (controllable)
             editFragment.setArguments(args);
         else
             viewFragment.setArguments(args);
@@ -585,7 +583,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
         // Replace whatever is in the fragment_container view with this fragment,
         // and add the transaction to the back stack so the user can navigate back
-        transaction.replace(R.id.layout_container, controlable ? editFragment : viewFragment);
+        transaction.replace(R.id.layout_container, controllable ? editFragment : viewFragment);
         transaction.addToBackStack(null);
 
         // Commit the transaction
@@ -1228,6 +1226,15 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 if (requestCode == CLOUD_UPDATE) {
                     // Update note list view
                     adapter.notifyDataSetChanged();
+
+                    Boolean saveSuccessful = saveData(localPath, notes);
+
+                    if (saveSuccessful) {
+                        Toast toast = Toast.makeText(getContext(),
+                                getResources().getString(R.string.toast_new_note),
+                                Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
 
                     if (notes.length() == 0)
                         noNotes.setVisibility(View.VISIBLE);

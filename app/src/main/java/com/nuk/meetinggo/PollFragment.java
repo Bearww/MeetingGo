@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
@@ -40,8 +41,12 @@ import java.util.Map;
 import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
 import static com.nuk.meetinggo.DataUtils.NEW_POLL_REQUEST;
 import static com.nuk.meetinggo.DataUtils.OPTION_ARRAY;
+import static com.nuk.meetinggo.DataUtils.OPTION_CONTENT;
+import static com.nuk.meetinggo.DataUtils.OPTION_ID;
+import static com.nuk.meetinggo.DataUtils.OPTION_VOTES;
 import static com.nuk.meetinggo.DataUtils.POLLS_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.POLL_BODY;
+import static com.nuk.meetinggo.DataUtils.POLL_CHECK;
 import static com.nuk.meetinggo.DataUtils.POLL_COLOUR;
 import static com.nuk.meetinggo.DataUtils.POLL_ENABLED;
 import static com.nuk.meetinggo.DataUtils.POLL_FAVOURED;
@@ -51,6 +56,7 @@ import static com.nuk.meetinggo.DataUtils.POLL_ID;
 import static com.nuk.meetinggo.DataUtils.POLL_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.POLL_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.POLL_TITLE;
+import static com.nuk.meetinggo.DataUtils.POLL_TOPIC;
 import static com.nuk.meetinggo.DataUtils.deletePolls;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
@@ -81,12 +87,15 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
     public static boolean searchActive = false;
     private ArrayList<Integer> realIndexesOfSearchResults; // To keep track of real indexes in searched polls
 
+    public static boolean editActive = false;
+
     private int lastFirstVisibleItem = -1; // Last first item seen in list view scroll changed
     private float newPollButtonBaseYCoordinate; // Base Y coordinate of newPoll button
 
     private AlertDialog addPollDialog;
 
-    private DetachableResultReceiver mReceiver;
+    private static FragmentManager mManager;
+    private static DetachableResultReceiver mReceiver;
 
     private LinkCloudTask linkTask;
 
@@ -106,6 +115,8 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         // If not null -> equal main polls to retrieved polls
         if (tempPolls != null)
             polls = tempPolls;
+
+        mManager = getActivity().getSupportFragmentManager();
 
         mReceiver = new DetachableResultReceiver(new Handler());
         mReceiver.setReceiver(this);
@@ -127,7 +138,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         newPollButtonBaseYCoordinate = newPoll.getY();
 
         // Initialize PollAdapter with polls array
-        adapter = new PollAdapter(getContext(), polls);
+        adapter = new PollAdapter(getContext(), polls, mManager, mReceiver);
         listView.setAdapter(adapter);
 
         // Set item click, multi choice and scroll listeners
@@ -166,7 +177,24 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         newPoll.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                addPollDialog.show();
+                editActive = true;
+
+                // Create fragment and give it an argument
+                EditPollFragment nextFragment = new EditPollFragment();
+                Bundle args = new Bundle();
+                args.putInt(POLL_REQUEST_CODE, NEW_POLL_REQUEST);
+                args.putParcelable(POLL_RECEIVER, mReceiver);
+                nextFragment.setArguments(args);
+
+                FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
+
+                // Replace whatever is in the fragment_container view with this fragment,
+                // and add the transaction to the back stack so the user can navigate back
+                transaction.replace(R.id.layout_container, nextFragment);
+                transaction.addToBackStack(null);
+
+                // Commit the transaction
+                transaction.commit();
             }
         });
 
@@ -330,23 +358,25 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
      */
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
         // Create fragment and give it an argument
-        EditPollFragment nextFragment = new EditPollFragment();
+        ViewPollFragment nextFragment = new ViewPollFragment();
         Bundle args = new Bundle();
         args.putInt(POLL_REQUEST_CODE, NEW_POLL_REQUEST);
         args.putParcelable(POLL_RECEIVER, mReceiver);
         Log.i("[PF]", "Put receiver " + mReceiver.toString());
 
-        // If search is active -> use position from realIndexesOfSearchResults for EditPollFragment
+        // If search is active -> use position from realIndexesOfSearchResults for ViewPollFragment
         if (searchActive) {
             int newPosition = realIndexesOfSearchResults.get(position);
 
             try {
-                // Package selected poll content and send to EditPollFragment
+                // Package selected poll content and send to ViewPollFragment
                 args.putString(POLL_TITLE, polls.getJSONObject(newPosition).getString(POLL_TITLE));
                 args.putString(POLL_BODY, polls.getJSONObject(newPosition).getString(POLL_BODY));
                 args.putString(POLL_COLOUR, polls.getJSONObject(newPosition).getString(POLL_COLOUR));
                 args.putInt(POLL_FONT_SIZE, polls.getJSONObject(newPosition).getInt(POLL_FONT_SIZE));
+                args.putString(OPTION_ARRAY, polls.getJSONObject(newPosition).getString(OPTION_ARRAY));
 
                 if (polls.getJSONObject(newPosition).has(POLL_HIDE_BODY)) {
                     args.putBoolean(POLL_HIDE_BODY,
@@ -363,14 +393,15 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
             args.putInt(POLL_REQUEST_CODE, newPosition);
         }
 
-        // If search is not active -> use normal position for EditPollFragment
+        // If search is not active -> use normal position for ViewPollFragment
         else {
             try {
-                // Package selected poll content and send to EditPollFragment
+                // Package selected poll content and send to ViewPollFragment
                 args.putString(POLL_TITLE, polls.getJSONObject(position).getString(POLL_TITLE));
                 args.putString(POLL_BODY, polls.getJSONObject(position).getString(POLL_BODY));
                 args.putString(POLL_COLOUR, polls.getJSONObject(position).getString(POLL_COLOUR));
                 args.putInt(POLL_FONT_SIZE, polls.getJSONObject(position).getInt(POLL_FONT_SIZE));
+                args.putString(OPTION_ARRAY, polls.getJSONObject(position).getString(OPTION_ARRAY));
 
                 if (polls.getJSONObject(position).has(POLL_HIDE_BODY)) {
                     args.putBoolean(POLL_HIDE_BODY,
@@ -463,7 +494,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                             polls = deletePolls(polls, checkedArray);
 
                             // Create and set new adapter with new polls array
-                            adapter = new PollAdapter(getContext(), polls);
+                            adapter = new PollAdapter(getContext(), polls, mManager, mReceiver);
                             listView.setAdapter(adapter);
 
                             // Attempt to save polls to local file
@@ -593,7 +624,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
             }
 
             // Create and set adapter with pollsFound to refresh ListView
-            PollAdapter searchAdapter = new PollAdapter(getContext(), pollsFound);
+            PollAdapter searchAdapter = new PollAdapter(getContext(), pollsFound, mManager, mReceiver);
             listView.setAdapter(searchAdapter);
         }
 
@@ -603,7 +634,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
             for (int i = 0; i < polls.length(); i++)
                 realIndexesOfSearchResults.add(i);
 
-            adapter = new PollAdapter(getContext(), polls);
+            adapter = new PollAdapter(getContext(), polls, mManager, mReceiver);
             listView.setAdapter(adapter);
         }
 
@@ -622,7 +653,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
      */
     protected void searchEnded() {
         searchActive = false;
-        adapter = new PollAdapter(getContext(), polls);
+        adapter = new PollAdapter(getContext(), polls, mManager, mReceiver);
         listView.setAdapter(adapter);
         listView.setLongClickable(true);
         newPollButtonVisibility(true);
@@ -681,7 +712,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                     // Equal main polls array with new sorted array and reset adapter
                     polls = newArray;
-                    adapter = new PollAdapter(context, polls);
+                    adapter = new PollAdapter(context, polls, mManager, mReceiver);
                     listView.setAdapter(adapter);
 
                     // Smooth scroll to top
@@ -761,6 +792,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
      */
     @Override
     public void onReceiveResult(int requestCode, int resultCode, Bundle resultData) {
+
         if (resultCode == Activity.RESULT_OK) {
             // If search was active -> call 'searchEnded' method
             if (searchActive && searchMenu != null)
@@ -810,9 +842,14 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         private String mLinkData;
 
         private final String CONTENT_OBJECT = "obj_voting_result";
+        private final String CONTENT_OPTION = "obj_";
         private final String CONTENT_TITLE = "head_issue";
+        private final String CONTENT_TOPIC = "topic_id";
         private final String CONTENT_ID = "issue_id";
-        private final String CONTENT_COUNT = "member_vote";
+        private final String CONTENT_CHECK = "member_vote";
+        private final String CONTENT_OPTION_ID = "option_id";
+        private final String CONTENT_OPTION_TITLE = "option";
+        private final String CONTENT_OPTION_VOTES = "result";
 
         LinkCloudTask(int request, int result, Bundle data) {
             requestCode = request;
@@ -838,7 +875,8 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                         JSONArray title = null;
                         JSONArray id = null;
-                        JSONArray count = null;
+                        JSONArray topic = null;
+                        JSONArray check = null;
                         if (object.has(CONTENT_TITLE))
                             title = object.getJSONArray(CONTENT_TITLE);
                         else
@@ -849,20 +887,25 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                         else
                             Log.i("[PF]", "Fail to fetch field " + CONTENT_ID);
 
-                        if (object.has(CONTENT_COUNT))
-                            count = object.getJSONArray(CONTENT_COUNT);
+                        if (object.has(CONTENT_TOPIC))
+                            topic = object.getJSONArray(CONTENT_TOPIC);
                         else
-                            Log.i("[PF]", "Fail to fetch field " + CONTENT_COUNT);
+                            Log.i("[PF]", "Fail to fetch field " + CONTENT_TOPIC);
 
-                        if (title != null && id != null && count != null) {
+                        if (object.has(CONTENT_CHECK))
+                            check = object.getJSONArray(CONTENT_CHECK);
+                        else
+                            Log.i("[PF]", "Fail to fetch field " + CONTENT_CHECK);
+
+                        if (title != null && id != null && topic != null && check != null) {
                             if (title.length() == id.length()) {
                                 // Update polls, check poll id is either existed or not
                                 // Yes -> update data, no -> add new poll
                                 for(int i = 0; i < id.length(); i++) {
                                     int position = -1;
                                     for(int j = 0; j < polls.length(); j++) {
-                                        if(polls.getJSONObject(j).has(POLL_ID)
-                                                && id.getString(i).equals(polls.getJSONObject(j).getString(POLL_ID))) {
+                                        if(id.getString(i).equals(polls.getJSONObject(j).getString(POLL_ID))
+                                                && topic.getString(i).equals(polls.getJSONObject(j).getString(POLL_TOPIC))) {
                                             position = j;
                                             break;
                                         }
@@ -875,11 +918,14 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                                         // TODO add body
                                         poll.put(POLL_ID, id.getString(i));
+                                        poll.put(POLL_TOPIC, topic.getString(i));
                                         poll.put(POLL_TITLE, title.getString(i));
+                                        poll.put(POLL_CHECK, check.getInt(i) == 1);
                                         poll.put(POLL_BODY, "");
                                         poll.put(POLL_COLOUR, "#FFFFFF");
                                         poll.put(POLL_FAVOURED, false);
                                         poll.put(POLL_FONT_SIZE, 18);
+                                        poll.put(OPTION_ARRAY, getOptions(info, i));
 
                                         polls.put(poll);
                                     }
@@ -887,7 +933,10 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                                     else {
                                         poll = polls.getJSONObject(position);
 
+                                        poll.put(POLL_TOPIC, topic.getString(i));
                                         poll.put(POLL_TITLE, title.getString(i));
+                                        poll.put(POLL_CHECK, check.getInt(i) == 1);
+                                        poll.put(OPTION_ARRAY, getOptions(info, i));
 
                                         polls.put(position, poll);
                                     }
@@ -906,32 +955,35 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                     else
                         Log.i("[PF]", "No content key " + CONTENT_OBJECT);
                 }
-                
-                Log.i("[PF]", "create poll form");
-                Map<String, String> form = new HashMap<>();
-
-                // Add new poll to form
-                form.put("issue", resultData.getString(POLL_TITLE));
-                //form.put("content", resultData.getString(NOTE_BODY));
-                //form.put(NOTE_COLOUR, resultData.getString(NOTE_COLOUR));
-                //form.put(NOTE_FAVOURED, false);
-                //form.put(NOTE_FONT_SIZE, resultData.getInt(NOTE_FONT_SIZE));
-                //form.put(NOTE_HIDE_BODY, resultData.getBoolean(NOTE_HIDE_BODY));
-
-                // Save new poll
-                if (requestCode == NEW_POLL_REQUEST) {
-                    // Insert to database
-                    mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
-                    if (mLinkSuccess = LinkCloud.hasData())
-                        return true;
-                }
-                // Update exsited poll
                 else {
-                    // TODO change add to update poll in database
-                    // Update database
-                    mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
-                    if (mLinkSuccess = LinkCloud.hasData())
+                    Log.i("[PF]", "create poll form");
+                    Map<String, String> form = new HashMap<>();
+
+                    // Add new poll to form
+                    form.put("meeting_id", String.valueOf(MeetingInfo.meetingID));
+                    form.put("topic_id", String.valueOf(MeetingInfo.topicID));
+                    form.put("issue", resultData.getString(POLL_TITLE));
+                    //form.put("content", resultData.getString(POLL_BODY));
+                    //form.put(POLL_COLOUR, resultData.getString(POLL_COLOUR));
+                    //form.put(POLL_FAVOURED, false);
+                    //form.put(POLL_FONT_SIZE, resultData.getInt(POLL_FONT_SIZE));
+                    //form.put(POLL_HIDE_BODY, resultData.getBoolean(POLL_HIDE_BODY));
+
+                    // Save new poll
+                    if (requestCode == NEW_POLL_REQUEST) {
+                        // TODO Insert to database
+                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
+                        //if (mLinkSuccess = LinkCloud.hasData())
                         return true;
+                    }
+                    // Update exited poll
+                    else {
+                        // TODO change add to update poll in database
+                        // Update database
+                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
+                        //if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -952,6 +1004,15 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                     // Update poll list view
                     adapter.notifyDataSetChanged();
 
+                    Boolean saveSuccessful = saveData(localPath, polls);
+
+                    if (saveSuccessful) {
+                        Toast toast = Toast.makeText(getContext(),
+                                getResources().getString(R.string.toast_new_poll),
+                                Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+
                     if (polls.length() == 0)
                         noPolls.setVisibility(View.VISIBLE);
                     else
@@ -971,6 +1032,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                         newPollObject.put(POLL_FAVOURED, false);
                         newPollObject.put(POLL_FONT_SIZE, resultData.getInt(POLL_FONT_SIZE));
                         newPollObject.put(POLL_HIDE_BODY, resultData.getBoolean(POLL_HIDE_BODY));
+                        newPollObject.put(OPTION_ARRAY, resultData.getString(OPTION_ARRAY));
 
                         polls.put(newPollObject);
 
@@ -1012,6 +1074,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                         newPollObject.put(POLL_COLOUR, resultData.getString(POLL_COLOUR));
                         newPollObject.put(POLL_FONT_SIZE, resultData.getInt(POLL_FONT_SIZE));
                         newPollObject.put(POLL_HIDE_BODY, resultData.getBoolean(POLL_HIDE_BODY));
+                        newPollObject.put(OPTION_ARRAY, resultData.getString(OPTION_ARRAY));
 
                         // Update poll at position 'requestCode'
                         polls.put(requestCode, newPollObject);
@@ -1031,6 +1094,76 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         @Override
         protected void onCancelled() {
             linkTask = null;
+        }
+
+        private JSONArray getOptions(JSONObject info, int index) {
+            JSONArray options = new JSONArray();
+
+            try {
+                if (info.has(CONTENT_OPTION + index)) {
+                    JSONObject object = info.getJSONObject(CONTENT_TOPIC + index);
+
+                    JSONArray id = null;
+                    JSONArray title = null;
+                    JSONArray votes = null;
+
+                    if (object.has(CONTENT_OPTION_ID))
+                        id = object.getJSONArray(CONTENT_OPTION_ID);
+                    else
+                        Log.i("[PF]", "Fail to fetch field " + CONTENT_OPTION_ID);
+
+                    if (object.has(CONTENT_OPTION_TITLE))
+                        title = object.getJSONArray(CONTENT_OPTION_TITLE);
+                    else
+                        Log.i("[PF]", "Fail to fetch field " + CONTENT_OPTION_TITLE);
+
+                    if (object.has(CONTENT_OPTION_VOTES))
+                        votes = object.getJSONArray(CONTENT_OPTION_VOTES);
+                    else
+                        Log.i("[PF]", "Fail to fetch field " + CONTENT_OPTION_VOTES);
+
+                    if (id != null && title != null && votes != null) {
+                        // Update options, check option id is either existed or not
+                        // Yes -> update data, no -> add new option
+                        for (int i = 0; i < id.length(); i++) {
+                            int position = -1;
+                            for (int j = 0; j < polls.length(); j++) {
+                                if (id.getString(i).equals(polls.getJSONObject(j).getString(OPTION_ARRAY))) {
+                                    position = j;
+                                    break;
+                                }
+                            }
+
+                            JSONObject option = null;
+                            // Add new option
+                            if (position < 0) {
+                                option = new JSONObject();
+
+                                option.put(OPTION_ID, id.getString(i));
+                                option.put(OPTION_CONTENT, title.getString(i));
+                                option.put(OPTION_VOTES, votes.getString(i));
+
+                                options.put(option);
+                            }
+                            // Update existed option
+                            else {
+                                option = polls.getJSONObject(position);
+
+                                option.put(OPTION_ID, id.getString(i));
+                                option.put(OPTION_CONTENT, title.getString(i));
+                                option.put(OPTION_VOTES, votes.getString(i));
+
+                                options.put(position, option);
+                            }
+                        }
+                    }
+                } else
+                    Log.i("[PF]", "Fail to fetch field " + CONTENT_OPTION + index);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            return options;
         }
     }
 }

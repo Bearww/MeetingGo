@@ -51,6 +51,7 @@ import static com.nuk.meetinggo.DataUtils.POLL_TITLE;
 import static com.nuk.meetinggo.DataUtils.deleteOptions;
 import static com.nuk.meetinggo.MeetingInfo.CONTENT_TOPIC_ID;
 import static com.nuk.meetinggo.MeetingInfo.GET_TOPIC_BODY;
+import static com.nuk.meetinggo.PollFragment.editActive;
 
 public class EditPollFragment extends Fragment implements AdapterView.OnItemClickListener,
         Toolbar.OnMenuItemClickListener, IOnFocusListenable {
@@ -109,6 +110,8 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
 
         // Init options array
         options = new JSONArray();
+
+        addOption();
     }
 
     @Override
@@ -126,6 +129,9 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
         // Initialize OptionAdapter with options array
         adapter = new OptionAdapter(getContext(), options);
         listView.setAdapter(adapter);
+
+        // Set item click listener
+        listView.setOnItemClickListener(this);
 
         imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
 
@@ -167,6 +173,16 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
 
                 try {
                     options = new JSONArray(bundle.getString(OPTION_ARRAY));
+
+                    if (options.length() > 0) {
+                        JSONObject object = options.getJSONObject(options.length() - 1);
+
+                        if (!TextUtils.isEmpty(object.getString(OPTION_CONTENT)))
+                            addOption();
+                    }
+                    else
+                        addOption();
+
                     adapter = new OptionAdapter(getContext(), options);
                     listView.setAdapter(adapter);
                 } catch (JSONException e) {
@@ -283,6 +299,7 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
 
                             dialog.dismiss();
 
+                            editActive = false;
                             getActivity().onBackPressed();
                         }
                     }
@@ -296,20 +313,6 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-        if (position + 1 == options.length()) {
-            JSONObject newOptionObject = new JSONObject();
-
-            try {
-                newOptionObject.put(OPTION_CONTENT, "");
-                newOptionObject.put(OPTION_VOTES, 0);
-
-                options.put(newOptionObject);
-
-                adapter.notifyDataSetChanged();
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
 
@@ -377,6 +380,23 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
      * Set RESULT_OK and go back to MainFragment
      */
     protected void saveChanges() {
+        // Delete default option
+        if (options.length() > 0) {
+            JSONObject object = null;
+            try {
+                object = options.getJSONObject(options.length() - 1);
+
+                if (TextUtils.isEmpty(object.getString(OPTION_CONTENT))) {
+                    ArrayList<Integer> delete = new ArrayList<>();
+                    delete.add(options.length() - 1);
+
+                    options = deleteOptions(options, delete);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
         Bundle changes = new Bundle();
 
         // Package everything and send back to activity with OK
@@ -391,6 +411,7 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
 
         imm.hideSoftInputFromWindow(titleEdit.getWindowToken(), 0);
 
+        editActive = false;
         getActivity().onBackPressed();
     }
 
@@ -399,6 +420,8 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
      * Back or navigation '<-' pressed
      */
     public void onBackPressed() {
+
+        editActive = false;
         // New poll -> show 'Save changes?' dialog
         if (bundle.getInt(POLL_REQUEST_CODE) == NEW_POLL_REQUEST)
             saveChangesDialog.show();
@@ -411,6 +434,24 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
              *  If not -> hide keyboard if showing and finish
              */
             if (!isEmpty(titleEdit)) {
+
+                // Delete default option
+                if (options.length() > 0) {
+                    JSONObject object = null;
+                    try {
+                        object = options.getJSONObject(options.length() - 1);
+
+                        if (TextUtils.isEmpty(object.getString(OPTION_CONTENT))) {
+                            ArrayList<Integer> delete = new ArrayList<>();
+                            delete.add(options.length() - 1);
+
+                            options = deleteOptions(options, delete);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
                 if (!(titleEdit.getText().toString().equals(bundle.getString(POLL_TITLE))) ||
                         !(bodyEdit.getText().toString().equals(bundle.getString(POLL_BODY))) ||
                         !(colour.equals(bundle.getString(POLL_COLOUR))) ||
@@ -494,6 +535,37 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
 
         adapter = new OptionAdapter(context, options);
         listView.setAdapter(adapter);
+    }
+
+    public static void changeOption(int position, String text) {
+        try {
+            JSONObject optionObject = options.getJSONObject(position);
+            optionObject.put(OPTION_CONTENT, text);
+            options.put(position, optionObject);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static boolean isLastOption(int position) {
+        return (position + 1) == options.length();
+    }
+
+    public static void addOption() {
+        JSONObject newOptionObject = new JSONObject();
+
+        try {
+            newOptionObject.put(OPTION_CONTENT, "");
+            newOptionObject.put(OPTION_VOTES, 0);
+
+            options.put(newOptionObject);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void optionChanged() {
+        adapter.notifyDataSetChanged();
     }
 
     /**

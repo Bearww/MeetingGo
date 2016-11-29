@@ -5,15 +5,29 @@
     android:layout_height="wrap_content"
     android:id="@+id/relativeLayout"
     android:orientation="vertical"
-    android:focusableInTouchMode="false"
-    android:descendantFocusability="blocksDescendants"
     android:background="@drawable/rounded_card" >
 
     <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/poll_option"
+        android:hint="@string/poll_option"
         android:id="@+id/optionText"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="5dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginRight="40dp"
+        android:layout_toRightOf="@+id/delete"
+        android:textStyle="bold"
+        android:textSize="25sp"
+        android:maxLines="1"
+        android:textColor="@color/black_95"
+        android:paddingBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/optionView"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
         android:layout_marginLeft="5dp"

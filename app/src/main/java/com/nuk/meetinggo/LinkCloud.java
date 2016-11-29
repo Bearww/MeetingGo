@@ -38,27 +38,31 @@ public class LinkCloud {
 	public static String ADD_MEETING		= "add_meeting.php";
 	public static String JOIN_MEETING		= "device/employee/join_meeting.php";
 	public static String ADD_POLL			= "back_end/meeting/set_info/set_meeting_initiate_vote.php";
+	public static String POLL				= "back_end/meeting/set_info/set_meeting_vote.php";
 
 	// Cloud data constants used in key-value store
 	public static final int CLOUD_UPDATE = 50000;
 
 	//---------------------------------------------------------------------------------------------------------------------//
 
-	//private static String DEFAUL_WEB_LINK = "http://10.0.109.146/cloud/meeting_cloud/";
-	//private static String DEFAUL_WEB_LINK = "http://169.254.156.204/cloud/meeting_cloud/";
-	private static String DEFAUL_WEB_LINK = "http://192.168.0.102:8080/meeting_cloud/";
+	private final static String DEFAULT_SERVER_IP = "192.168.0.102";
+	//private final static String DEFAULT_SERVER_IP = "192.168.137.1";
+	public static String SERVER_IP = DEFAULT_SERVER_IP;
+	//private static String DEFAULT_WEB_LINK = "http://169.254.156.204/cloud/meeting_cloud/";
+	private static String DEFAULT_WEB_LINK = "http://" + DEFAULT_SERVER_IP + "/cloud/meeting_cloud/";
+	//private static String DEFAULT_WEB_LINK = "http://" + DEFAULT_SERVER_IP + ":8080/meeting_cloud/";
 
-	public static String BASIC_WEB_LINK = DEFAUL_WEB_LINK;
+	public static String BASIC_WEB_LINK = DEFAULT_WEB_LINK;
 	private static DefaultHttpClient conn_cloud = new DefaultHttpClient();
 	private static int json_index;
 	public static JSONObject json_web_data = new JSONObject();
 	public static int response_status;
 
-	public static Boolean setLink(String basic_link) {
-		if (basic_link == "")
+	public static Boolean setIP(String ip) {
+		if (ip == "")
 			return false;
 
-		BASIC_WEB_LINK = basic_link;
+		BASIC_WEB_LINK = "http://" + ip + "/meeting_cloud/";
 		return true;
 	}
 

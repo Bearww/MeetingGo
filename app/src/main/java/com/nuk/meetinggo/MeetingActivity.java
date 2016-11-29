@@ -49,7 +49,7 @@ import static com.nuk.meetinggo.MeetingInfo.TAG_TAB_DOCUMENT;
 import static com.nuk.meetinggo.MeetingInfo.TAG_TAB_MEMBER;
 import static com.nuk.meetinggo.MeetingInfo.TAG_TAB_POLL;
 import static com.nuk.meetinggo.MeetingInfo.TAG_TAB_QUESTION;
-import static com.nuk.meetinggo.MeetingInfo.TAG_TAB_RECORD;
+import static com.nuk.meetinggo.MeetingInfo.TAG_TAB_SETTING;
 import static com.nuk.meetinggo.MeetingInfo.TAG_TAB_TOPIC;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 import static com.nuk.meetinggo.MeetingInfo.topicID;
@@ -100,8 +100,7 @@ public class MeetingActivity extends AppCompatActivity {
         tabLayout.addTab(tabLayout.newTab().setText("文件").setTag(TAG_TAB_DOCUMENT));
         tabLayout.addTab(tabLayout.newTab().setText("問題").setTag(TAG_TAB_QUESTION));
         tabLayout.addTab(tabLayout.newTab().setText("投票").setTag(TAG_TAB_POLL));
-        tabLayout.addTab(tabLayout.newTab().setText("記錄").setTag(TAG_TAB_RECORD));
-        tabLayout.addTab(tabLayout.newTab().setText("測試"));
+        tabLayout.addTab(tabLayout.newTab().setText("設定").setTag(TAG_TAB_SETTING));
         tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 
         tabLayoutBaseYCoordinate = tabLayout.getY();
@@ -322,7 +321,7 @@ public class MeetingActivity extends AppCompatActivity {
                             GET_TOPIC_DOCUMENT = (!mObject.has(CONTENT_ADDRESS) ? "" : mObject.getString(CONTENT_ADDRESS));
                         }
                         else {
-                            Log.i("[MA]", "Fail to fetch link" + CONTENT_TOPIC_DOCUMENT);
+                            Log.i("[MA]", "Fail to fetch link " + CONTENT_TOPIC_DOCUMENT);
                             GET_TOPIC_DOCUMENT = "";
                         }
 
@@ -331,7 +330,7 @@ public class MeetingActivity extends AppCompatActivity {
                             GET_MEETING_POLL = (!mObject.has(CONTENT_ADDRESS) ? "" : mObject.getString(CONTENT_ADDRESS));
                         }
                         else {
-                            Log.i("[MA]", "Fail to fetch link" + CONTENT_POLL);
+                            Log.i("[MA]", "Fail to fetch link " + CONTENT_POLL);
                             GET_MEETING_POLL = "";
                         }
 
@@ -340,7 +339,7 @@ public class MeetingActivity extends AppCompatActivity {
                             GET_MEETING_QUESTION = (!mObject.has(CONTENT_ADDRESS) ? "" : mObject.getString(CONTENT_ADDRESS));
                         }
                         else {
-                            Log.i("[MA]", "Fail to fetch link" + CONTENT_QUESTION);
+                            Log.i("[MA]", "Fail to fetch link " + CONTENT_QUESTION);
                             GET_MEETING_QUESTION = "";
                         }
                     } catch (JSONException e) {
@@ -367,14 +366,14 @@ public class MeetingActivity extends AppCompatActivity {
                         if (mLink.has(CONTENT_DOCUMENT))
                             GET_MEETING_DOCUMENT = mLink.getString(CONTENT_DOCUMENT);
                         else {
-                            Log.i("[MA]", "Fail to fetch link" + CONTENT_DOCUMENT);
+                            Log.i("[MA]", "Fail to fetch link " + CONTENT_DOCUMENT);
                             GET_MEETING_DOCUMENT = "";
                         }
 
                         if (mLink.has(CONTENT_MEMBER))
                             GET_MEETING_MEMBER = mLink.getString(CONTENT_MEMBER);
                         else {
-                            Log.i("[MA]", "Fail to fetch link" + CONTENT_MEMBER);
+                            Log.i("[MA]", "Fail to fetch link " + CONTENT_MEMBER);
                             GET_MEETING_MEMBER = "";
                         }
                     } catch (JSONException e) {
