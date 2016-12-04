@@ -20,96 +20,77 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static com.nuk.meetinggo.RemoteActivity.isRunning;
+import static com.nuk.meetinggo.RemoteControlFragment.MODE_SHARE;
+
 public class ImageProvider implements Runnable {
 
     private FragmentActivity main;
     private Handler mHandler;
-    private InetAddress serverAddr;
-    private int serverPort = Constants.SERVER_PORT;
-    private int imagePort;
-    private Socket socket, image;
+    private String serverAddr = LinkCloud.SERVER_IP;
+    private int imagePort = Constants.SERVER_RECVIMAGE;
+    private Socket mSocket, image;
     private OutputStream out;
     private PrintWriter mOut; // Main server socket
 
     WebView screenImage;
 
     private int framesPerSecond = 1;
-    public boolean isConnected = false;
+    public static boolean isConnected = false;
 
-    public ImageProvider(int port, FragmentActivity activity, Handler handler) {
+    public ImageProvider(Socket socket, FragmentActivity activity, Handler handler) {
         main = activity;
+        mSocket = socket;
         mHandler = handler;
         screenImage = null;
-
-        try {
-            serverAddr = InetAddress.getByName(Constants.SERVER_IP);
-        } catch (Exception e) {
-            Log.e("ClientProvider", "C: Error", e);
-        }
-        imagePort = port;
-    }
-
-    public ImageProvider(int port, WebView view, FragmentActivity activity) {
-        main = activity;
-        screenImage = view;
-
-        try {
-            serverAddr = InetAddress.getByName(Constants.SERVER_IP);
-        } catch (Exception e) {
-            Log.e("ClientProvider", "C: Error", e);
-        }
-        imagePort = port;
     }
 
     public void run() {
-        try {
-            isConnected = true;
-            socket = new Socket(serverAddr, serverPort); // Open socket on server IP and port
-        } catch (Exception e) {
-            Log.e("ClientActivity", "Client Connection Error", e);
+
+        if (mSocket == null)
             isConnected = false;
-        }
+        else
+            isConnected = true;
 
         try {
             if (isConnected) {
-                mOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket
+                mOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(mSocket
                         .getOutputStream())), true); // Create output stream to send data to server
 
                 // Send connection message
                 mOut.println("" + Constants.PROVIDEIMAGE);
-                mOut.flush();
-
-                // Simulate network delay.
-                //Thread.sleep(2000);
+                //mOut.flush();
+                //RemoteControlFragment.sendMessage("" + Constants.PROVIDEIMAGE);
 
                 Timer timer = new Timer();
-                int frames = 2000 / framesPerSecond;
+                int frames = 1000 / framesPerSecond;
 
                 timer.scheduleAtFixedRate(sendImageTask, 0, frames);
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             Log.e("remotedroid", "Error while creating OutWriter", e);
-        //} catch (InterruptedException e) {
             e.printStackTrace();
+            isConnected = false;
         }
     }
 
     private TimerTask sendImageTask = new TimerTask() {
         @Override
         public void run() {
-            Bitmap screenShot = getScreenShot();
-            // TODO Check image in storage
-            //saveImage(screenShot);
-            byte[] img = Constants.createBitmapMessage(screenShot);
-            sendMessage(img);
-            previewImage(img);
+            if (isRunning) {
+                Bitmap screenShot = getScreenShot();
+
+                byte[] img = Constants.createBitmapMessage(screenShot);
+                sendMessage(img);
+                previewImage(img);
+            }
         }
     };
 
@@ -139,35 +120,32 @@ public class ImageProvider implements Runnable {
         }
     }
 
-    //將全螢幕畫面轉換成Bitmap
+    // Turn full screen to bitmap
     private Bitmap getScreenShot()
     {
 
-        //藉由View來Cache全螢幕畫面後放入Bitmap
+        // Cache full screen and put in view
         View view = main.getWindow().getDecorView();
         view.setDrawingCacheEnabled(true);
         view.buildDrawingCache();
         Bitmap fullBitmap = view.getDrawingCache();
 
-        //取得系統狀態列高度
+        // Get the height of system bar
         Rect rect = new Rect();
         main.getWindow().getDecorView().getWindowVisibleDisplayFrame(rect);
         int statusBarHeight = rect.top;
 
-        //取得手機螢幕長寬尺寸
+        // Get device width and height
         Display display = main.getWindowManager().getDefaultDisplay();
         Point size = new Point();
         display.getSize(size);
         int phoneWidth = size.x;
         int phoneHeight = size.y;
 
-        //將狀態列的部分移除並建立新的Bitmap
+        // Create new bitmap and remove system bar
         Bitmap bitmap = Bitmap.createBitmap(fullBitmap, 0, statusBarHeight, phoneWidth, phoneHeight - statusBarHeight);
-        //將Cache的畫面清除
+        // Remove screen cache
         view.destroyDrawingCache();
-
-        //screenImage.setDrawingCacheEnabled(true);
-        //Bitmap bitmap = Bitmap.createBitmap(screenImage.getDrawingCache());
 
         return bitmap;
     }
@@ -198,6 +176,7 @@ public class ImageProvider implements Runnable {
             bundle.putByteArray("Image", img);
 
             Message uiMessage = new Message();
+            bundle.putInt("Mode", MODE_SHARE);
             uiMessage.setData(bundle);
             uiMessage.what = Constants.DO_UI_IMAGE;
             mHandler.sendMessage(uiMessage);

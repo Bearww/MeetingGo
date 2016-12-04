@@ -1,5 +1,6 @@
 package com.nuk.meetinggo;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
@@ -17,19 +18,25 @@ import android.view.View;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MenuActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    LinkCloudTask linkTask;
+
     private Map<String, String> meetingInfo = new HashMap<>();
 
-    private static String LINK_CREATE_MEETING = "1";
-    private static String LINK_GROUP_LIST = "1";
-    private static String LINK_UPLOAD_SPACE = "2";
-    private static String LINK_GROUP_UPLOAD_CENTER = "3";
-    private static String LINK_LOGOUT = "4";
+    public static String LINK_CREATE_MEETING = "1";
+    public static String LINK_FUTURE_MEETING = "2";
+    public static String LINK_RECORD = "3";
+    public static String LINK_MEETING = "4";
+
+    private final static String CONTENT_FUTURE = "2";
+    private final static String CONTENT_RECORD = "3";
+    private final static String CONTENT_MEETING = "4";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +87,13 @@ public class MenuActivity extends AppCompatActivity
                 for(String key : meetingInfo.keySet()) {
                     Log.i("[MA]map", key + " " + meetingInfo.get(key));
                 }
+
+                LINK_FUTURE_MEETING = meetingInfo.get(CONTENT_FUTURE);
+                LINK_RECORD = meetingInfo.get(CONTENT_RECORD);
+                LINK_MEETING = meetingInfo.get(CONTENT_MEETING);
+
+                linkTask = new LinkCloudTask(LINK_RECORD);
+                linkTask.execute();
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -151,5 +165,43 @@ public class MenuActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    /**
+     * Represents an asynchronous link cloud task used to request/send data
+     */
+    public class LinkCloudTask extends AsyncTask<Void, Void, Boolean> {
+
+        private String mUrl;
+
+        private JSONObject mObject;
+
+        LinkCloudTask(String url) {
+            mUrl = url;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                mObject = LinkCloud.request(mUrl);
+                Log.i("[MA]", mObject.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            linkTask = null;
+        }
+
+        @Override
+        protected void onCancelled() {
+            linkTask = null;
+        }
     }
 }

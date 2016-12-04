@@ -112,6 +112,11 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
         options = new JSONArray();
 
         addOption();
+
+        if (MeetingInfo.topicID == 0)
+            MeetingActivity.tabLayoutVisibility(false);
+        else
+            RemoteActivity.tabLayoutVisibility(false);
     }
 
     @Override
@@ -120,7 +125,7 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarEdit);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         titleEdit = (EditText) view.findViewById(R.id.titleEdit);
         bodyEdit = (EditText) view.findViewById(R.id.bodyEdit);
         relativeLayoutEdit = (RelativeLayout) view.findViewById(R.id.relativeLayoutEdit);

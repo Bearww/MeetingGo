@@ -31,6 +31,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.nuk.meetinggo.ColorPicker.ColorPickerSwatch.OnColorSelectedListener;
 import static com.nuk.meetinggo.DataUtils.ANSWER_ARRAY;
 import static com.nuk.meetinggo.DataUtils.ANSWER_CONTENT;
@@ -40,6 +43,7 @@ import static com.nuk.meetinggo.DataUtils.NEW_QUESTION_REQUEST;
 import static com.nuk.meetinggo.DataUtils.QUESTION_BODY;
 import static com.nuk.meetinggo.DataUtils.QUESTION_COLOUR;
 import static com.nuk.meetinggo.DataUtils.QUESTION_FONT_SIZE;
+import static com.nuk.meetinggo.DataUtils.QUESTION_ID;
 import static com.nuk.meetinggo.DataUtils.QUESTION_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.QUESTION_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.QUESTION_TITLE;
@@ -71,6 +75,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
     private String[] fontSizeNameArr; // Font size names string array
 
     // Defaults
+    private String questionID = "0"; // question default
     private String colour = "#FFFFFF"; // white default
     private int fontSize = 18; // Medium default
 
@@ -102,6 +107,10 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
         answers = new JSONArray();
 
         //tabLayoutVisibility(false);
+        if (MeetingInfo.topicID == 0)
+            MeetingActivity.tabLayoutVisibility(false);
+        else
+            RemoteActivity.tabLayoutVisibility(false);
     }
 
     @Override
@@ -113,7 +122,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
         titleText = (TextView) view.findViewById(R.id.titleText);
         bodyText = (TextView) view.findViewById(R.id.bodyText);
         noAnswers = (TextView) view.findViewById(R.id.noAnswers);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         relativeLayoutView = (RelativeLayout) view.findViewById(R.id.relativeLayoutView);
         messageText = (EditText) view.findViewById(R.id.messageText);
         sendText = (TextView) view.findViewById(R.id.sendText);
@@ -126,12 +135,13 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
 
         messageLayoutBaseYCoordinate = messageLayout.getY();
 
-        // Get data bundle from MainFragment
+        // Get data bundle from QuestionFragment
         bundle = getArguments();
 
         if (bundle != null) {
             // If current answer is not new -> initialize colour, font, hideBody and Textviews
             if (bundle.getInt(QUESTION_REQUEST_CODE) != NEW_QUESTION_REQUEST) {
+                questionID = bundle.getString(QUESTION_ID);
                 colour = bundle.getString(QUESTION_COLOUR);
                 fontSize = bundle.getInt(QUESTION_FONT_SIZE);
 
@@ -353,7 +363,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
 
     /**
      * Create an Intent with title, body, colour, font size and hideBody extras
-     * Set RESULT_OK and go back to MainFragment
+     * Set RESULT_OK and go back to QuestionFragment
      */
     protected void saveChanges() {
         Bundle changes = new Bundle();
@@ -545,6 +555,10 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
         protected Boolean doInBackground(Void... params) {
             if (mRequest == SEND_MESSAGE) {
                 // TODO link cloud and send
+                Map<String, String> form = new HashMap<>();
+
+                form.put("topic_id", String.valueOf(MeetingInfo.topicID));
+                form.put("question_id", questionID);
                 return true;
             }
 

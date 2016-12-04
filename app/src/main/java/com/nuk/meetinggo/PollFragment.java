@@ -86,6 +86,8 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
     // For disabling long clicks, favourite clicks and modifying the item click pattern
     public static boolean searchActive = false;
     private ArrayList<Integer> realIndexesOfSearchResults; // To keep track of real indexes in searched polls
+    private static ArrayList<Integer> realIndexesOfFilterResults; // To keep track of real indexes in filtered polls
+    private static JSONArray filteredPolls; // Filtered polls array
 
     public static boolean editActive = false;
 
@@ -116,6 +118,9 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         if (tempPolls != null)
             polls = tempPolls;
 
+        // Filter topic id from polls
+        filteredPolls = filterPoll();
+
         mManager = getActivity().getSupportFragmentManager();
 
         mReceiver = new DetachableResultReceiver(new Handler());
@@ -128,7 +133,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         newPoll = (ImageButton) view.findViewById(R.id.newPoll);
         noPolls = (TextView) view.findViewById(R.id.noPolls);
 
@@ -138,7 +143,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         newPollButtonBaseYCoordinate = newPoll.getY();
 
         // Initialize PollAdapter with polls array
-        adapter = new PollAdapter(getContext(), polls, mManager, mReceiver);
+        adapter = new PollAdapter(getContext(), filteredPolls, mManager, mReceiver);
         listView.setAdapter(adapter);
 
         // Set item click, multi choice and scroll listeners
@@ -199,7 +204,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         });
 
         // If no polls -> show 'Press + to add new poll' text, invisible otherwise
-        if (polls.length() == 0)
+        if (filteredPolls.length() == 0)
             noPolls.setVisibility(View.VISIBLE);
 
         else
@@ -250,7 +255,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                                     // Init realIndexes array
                                     realIndexesOfSearchResults = new ArrayList<Integer>();
-                                    for (int i = 0; i < polls.length(); i++)
+                                    for (int i = 0; i < filteredPolls.length(); i++)
                                         realIndexesOfSearchResults.add(i);
 
                                     adapter.notifyDataSetChanged();
@@ -334,7 +339,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                                 }
 
                                 // If no polls -> show 'Press + to add new poll' text, invisible otherwise
-                                if (polls.length() == 0)
+                                if (filteredPolls.length() == 0)
                                     noPolls.setVisibility(View.VISIBLE);
 
                                 else
@@ -354,6 +359,57 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
     }
 
     /**
+     * Implementation of filter poll
+     */
+    protected static JSONArray filterPoll() {
+
+        JSONArray pollsFiltered = new JSONArray();
+        realIndexesOfFilterResults = new ArrayList<>();
+
+        if (MeetingInfo.topicID != 0) {
+            // Loop through main polls list
+            for (int i = 0; i < polls.length(); i++) {
+                JSONObject poll = null;
+
+                // Get poll at position i
+                try {
+                    poll = polls.getJSONObject(i);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                // If poll not null and title/body contain query text
+                // -> Put in new polls array and add i to realIndexes array
+                if (poll != null) {
+                    try {
+                        if (poll.getString(POLL_TOPIC).equals(String.valueOf(MeetingInfo.topicID))) {
+
+                            pollsFiltered.put(poll);
+                            realIndexesOfFilterResults.add(i);
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        else {
+            for (int i = 0; i < polls.length(); i++) {
+                try {
+                    pollsFiltered.put(polls.getJSONObject(i));
+                    realIndexesOfFilterResults.add(i);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return pollsFiltered;
+    }
+
+    /**
      * If item clicked in list view -> Start EditPollFragment intent with position as requestCode
      */
     @Override
@@ -361,6 +417,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
         // Create fragment and give it an argument
         ViewPollFragment nextFragment = new ViewPollFragment();
+        editActive = false;
         Bundle args = new Bundle();
         args.putInt(POLL_REQUEST_CODE, NEW_POLL_REQUEST);
         args.putParcelable(POLL_RECEIVER, mReceiver);
@@ -372,8 +429,10 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
             try {
                 // Package selected poll content and send to ViewPollFragment
+                args.putString(POLL_ID, polls.getJSONObject(newPosition).getString(POLL_ID));
                 args.putString(POLL_TITLE, polls.getJSONObject(newPosition).getString(POLL_TITLE));
                 args.putString(POLL_BODY, polls.getJSONObject(newPosition).getString(POLL_BODY));
+                args.putBoolean(POLL_CHECK, polls.getJSONObject(newPosition).getBoolean(POLL_CHECK));
                 args.putString(POLL_COLOUR, polls.getJSONObject(newPosition).getString(POLL_COLOUR));
                 args.putInt(POLL_FONT_SIZE, polls.getJSONObject(newPosition).getInt(POLL_FONT_SIZE));
                 args.putString(OPTION_ARRAY, polls.getJSONObject(newPosition).getString(OPTION_ARRAY));
@@ -397,8 +456,10 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         else {
             try {
                 // Package selected poll content and send to ViewPollFragment
+                args.putString(POLL_ID, polls.getJSONObject(position).getString(POLL_ID));
                 args.putString(POLL_TITLE, polls.getJSONObject(position).getString(POLL_TITLE));
                 args.putString(POLL_BODY, polls.getJSONObject(position).getString(POLL_BODY));
+                args.putBoolean(POLL_CHECK, polls.getJSONObject(position).getBoolean(POLL_CHECK));
                 args.putString(POLL_COLOUR, polls.getJSONObject(position).getString(POLL_COLOUR));
                 args.putInt(POLL_FONT_SIZE, polls.getJSONObject(position).getInt(POLL_FONT_SIZE));
                 args.putString(OPTION_ARRAY, polls.getJSONObject(position).getString(OPTION_ARRAY));
@@ -450,6 +511,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
      */
     @Override
     public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+
         // If item checked -> add to array
         if (checked)
             checkedArray.add(position);
@@ -494,7 +556,8 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                             polls = deletePolls(polls, checkedArray);
 
                             // Create and set new adapter with new polls array
-                            adapter = new PollAdapter(getContext(), polls, mManager, mReceiver);
+                            filteredPolls = filterPoll();
+                            adapter = new PollAdapter(getContext(), filteredPolls, mManager, mReceiver);
                             listView.setAdapter(adapter);
 
                             // Attempt to save polls to local file
@@ -516,7 +579,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                             });
 
                             // If no polls -> show 'Press + to add new poll' text, invisible otherwise
-                            if (polls.length() == 0)
+                            if (filteredPolls.length() == 0)
                                 noPolls.setVisibility(View.VISIBLE);
 
                             else
@@ -595,12 +658,12 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
             realIndexesOfSearchResults = new ArrayList<Integer>();
 
             // Loop through main polls list
-            for (int i = 0; i < polls.length(); i++) {
+            for (int i = 0; i < filteredPolls.length(); i++) {
                 JSONObject poll = null;
 
                 // Get poll at position i
                 try {
-                    poll = polls.getJSONObject(i);
+                    poll = filteredPolls.getJSONObject(i);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -631,10 +694,10 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         // If query text length is 0 -> re-init realIndexes array (0 to length) and reset adapter
         else {
             realIndexesOfSearchResults = new ArrayList<Integer>();
-            for (int i = 0; i < polls.length(); i++)
+            for (int i = 0; i < filteredPolls.length(); i++)
                 realIndexesOfSearchResults.add(i);
 
-            adapter = new PollAdapter(getContext(), polls, mManager, mReceiver);
+            adapter = new PollAdapter(getContext(), filteredPolls, mManager, mReceiver);
             listView.setAdapter(adapter);
         }
 
@@ -653,7 +716,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
      */
     protected void searchEnded() {
         searchActive = false;
-        adapter = new PollAdapter(getContext(), polls, mManager, mReceiver);
+        adapter = new PollAdapter(getContext(), filteredPolls, mManager, mReceiver);
         listView.setAdapter(adapter);
         listView.setLongClickable(true);
         newPollButtonVisibility(true);
@@ -666,11 +729,12 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
      * @param position position of poll
      */
     public static void setFavourite(Context context, boolean favourite, int position) {
+
         JSONObject newFavourite = null;
 
         // Get poll at position and store in newFavourite
         try {
-            newFavourite = polls.getJSONObject(position);
+            newFavourite = filteredPolls.getJSONObject(position);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -700,7 +764,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                     // Copy contents to new sorted array without favoured element
                     for (int i = 0; i < polls.length(); i++) {
-                        if (i != position) {
+                        if (i != realIndexesOfFilterResults.get(position)) {
                             try {
                                 newArray.put(polls.get(i));
 
@@ -712,7 +776,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                     // Equal main polls array with new sorted array and reset adapter
                     polls = newArray;
-                    adapter = new PollAdapter(context, polls, mManager, mReceiver);
+                    adapter = new PollAdapter(context, filteredPolls = filterPoll(), mManager, mReceiver);
                     listView.setAdapter(adapter);
 
                     // Smooth scroll to top
@@ -726,7 +790,8 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                 // If favoured poll was first -> just update object in polls array and notify adapter
                 else {
                     try {
-                        polls.put(position, newFavourite);
+                        polls.put(realIndexesOfFilterResults.get(position), newFavourite);
+                        filteredPolls.put(position, newFavourite);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -740,7 +805,8 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
             else {
                 try {
                     newFavourite.put(POLL_FAVOURED, false);
-                    polls.put(position, newFavourite);
+                    polls.put(realIndexesOfFilterResults.get(position), newFavourite);
+                    filteredPolls.put(position, newFavourite);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -760,11 +826,12 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
      * @param position position of poll
      */
     public static void setMode(boolean enabled, int position) {
+
         JSONObject newEnabled = null;
 
         // Get poll at position and store in newEnabled
         try {
-            newEnabled = polls.getJSONObject(position);
+            newEnabled = filteredPolls.getJSONObject(position);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -773,7 +840,8 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         if (newEnabled != null) {
             try {
                 newEnabled.put(POLL_ENABLED, enabled);
-                polls.put(position, newEnabled);
+                polls.put(realIndexesOfFilterResults.get(position), newEnabled);
+                filteredPolls.put(position, newEnabled);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -925,9 +993,10 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                                         poll.put(POLL_COLOUR, "#FFFFFF");
                                         poll.put(POLL_FAVOURED, false);
                                         poll.put(POLL_FONT_SIZE, 18);
-                                        poll.put(OPTION_ARRAY, getOptions(info, i));
+                                        poll.put(OPTION_ARRAY, getOptions(info, i + 1));
 
                                         polls.put(poll);
+                                        filteredPolls.put(poll);
                                     }
                                     // Update existed poll
                                     else {
@@ -936,9 +1005,16 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                                         poll.put(POLL_TOPIC, topic.getString(i));
                                         poll.put(POLL_TITLE, title.getString(i));
                                         poll.put(POLL_CHECK, check.getInt(i) == 1);
-                                        poll.put(OPTION_ARRAY, getOptions(info, i));
+                                        poll.put(OPTION_ARRAY, getOptions(info, i + 1));
 
                                         polls.put(position, poll);
+
+                                        for (int j = 0; j < filteredPolls.length(); j++) {
+                                            if (position == realIndexesOfFilterResults.get(j)) {
+                                                filteredPolls.put(realIndexesOfFilterResults.get(j), poll);
+                                                break;
+                                            }
+                                        }
                                     }
                                 }
 
@@ -960,20 +1036,27 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                     Map<String, String> form = new HashMap<>();
 
                     // Add new poll to form
+                    Log.i("[PF]", String.valueOf(MeetingInfo.meetingID));
                     form.put("meeting_id", String.valueOf(MeetingInfo.meetingID));
                     form.put("topic_id", String.valueOf(MeetingInfo.topicID));
                     form.put("issue", resultData.getString(POLL_TITLE));
-                    //form.put("content", resultData.getString(POLL_BODY));
-                    //form.put(POLL_COLOUR, resultData.getString(POLL_COLOUR));
-                    //form.put(POLL_FAVOURED, false);
-                    //form.put(POLL_FONT_SIZE, resultData.getInt(POLL_FONT_SIZE));
-                    //form.put(POLL_HIDE_BODY, resultData.getBoolean(POLL_HIDE_BODY));
 
                     // Save new poll
                     if (requestCode == NEW_POLL_REQUEST) {
                         // TODO Insert to database
                         mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
                         //if (mLinkSuccess = LinkCloud.hasData())
+
+                        String id = LinkCloud.filterLink(mLinkData);
+                        JSONArray options = new JSONArray(resultData.getString(OPTION_ARRAY));
+
+                        form = new HashMap<>();
+                        form.put("issue_id", id);
+
+                        for (int i = 0; i < options.length(); i++) {
+                            form.put("option", options.getJSONObject(i).getString(OPTION_CONTENT));
+                            LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL_OPTION);
+                        }
                         return true;
                     }
                     // Update exited poll
@@ -1013,7 +1096,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                         toast.show();
                     }
 
-                    if (polls.length() == 0)
+                    if (filteredPolls.length() == 0)
                         noPolls.setVisibility(View.VISIBLE);
                     else
                         noPolls.setVisibility(View.INVISIBLE);
@@ -1054,7 +1137,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                         }
 
                         // If no polls -> show 'Press + to add new poll' text, invisible otherwise
-                        if (polls.length() == 0)
+                        if (filteredPolls.length() == 0)
                             noPolls.setVisibility(View.VISIBLE);
 
                         else
@@ -1101,7 +1184,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
             try {
                 if (info.has(CONTENT_OPTION + index)) {
-                    JSONObject object = info.getJSONObject(CONTENT_TOPIC + index);
+                    JSONObject object = info.getJSONObject(CONTENT_OPTION + index);
 
                     JSONArray id = null;
                     JSONArray title = null;

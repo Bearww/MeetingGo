@@ -23,19 +23,24 @@ public class RemoteAdapter extends FragmentStatePagerAdapter {
 
         switch (position) {
             case 0:
-                tab1 = new RemoteControlFragment();
+                if (tab1 == null)
+                    tab1 = new RemoteControlFragment();
                 return tab1;
             case 1:
-                tab2 = new DocumentFragment();
+                if (tab2 == null)
+                    tab2 = new DocumentFragment();
                 return tab2;
             case 2:
-                tab3 = new QuestionFragment();
+                if (tab3 == null)
+                    tab3 = new QuestionFragment();
                 return tab3;
             case 3:
-                tab4 = new PollFragment();
+                if (tab4 == null)
+                    tab4 = new PollFragment();
                 return tab4;
             case 4:
-                tab5 = new RecordFragment();
+                if (tab5 == null)
+                    tab5 = new RecordFragment();
                 return tab5;
             default:
                 return null;

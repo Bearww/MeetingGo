@@ -46,6 +46,7 @@ import static com.nuk.meetinggo.DataUtils.NOTE_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.NOTE_TITLE;
 import static com.nuk.meetinggo.MeetingInfo.CONTENT_TOPIC_ID;
 import static com.nuk.meetinggo.MeetingInfo.GET_TOPIC_BODY;
+import static com.nuk.meetinggo.MeetingActivity.tabLayoutVisibility;
 
 public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClickListener, IOnFocusListenable {
 
@@ -97,6 +98,8 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
 
         fontSizeArr = new int[]{14, 18, 22}; // 0 for small, 1 for medium, 2 for large
         fontSizeNameArr = getResources().getStringArray(R.array.fontSizeNames);
+
+        tabLayoutVisibility(false);
     }
 
     @Override

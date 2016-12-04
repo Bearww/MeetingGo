@@ -32,11 +32,13 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
@@ -49,6 +51,7 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
     View view;
     Toolbar toolbar;
     MenuItem linkMenu;
+    RelativeLayout buttonLayout;
     Button leftButton;
     Button rightButton;
     //Button connectButton;
@@ -57,15 +60,21 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
     View progressView;
     TextView noConnectionText;
 
+    private static int currentMode;
+    public static int NONE = -1;
+    public static int MODE_CONTROL = 1;
+    public static int MODE_SHARE = 2;
+    
     private Handler messageHandler;
     private ConnectServerTask connectServerTask;
 
+    private static boolean isConnected = false;
     private Thread listener;
     private Thread provider;
-    private boolean isConnected = false;
     private boolean displayKeyboard = false;
     private Socket socket;
-    private PrintWriter out;
+    private static PrintWriter out;
+    private static InputStream in;
 
     private int mouse_sensitivity = 1;
     private float screenRatio = 1.0f;
@@ -73,17 +82,27 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
     private float initX = 0;
     private float initY = 0;
 
+    private static float buttonLayoutBaseYCoordinate; // Base Y coordinate of button layout
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         // Save the context to show Toast messages
         context = getContext();
+        
+        currentMode = NONE;
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_remote, container, false);
+
+        // Get reference of button layout
+        buttonLayout = (RelativeLayout) view.findViewById(R.id.buttonLayout);
+
+        buttonLayoutBaseYCoordinate = buttonLayout.getY();
+        buttonLayoutVisibility(false);
 
         // Get references of all buttons
         leftButton = (Button) view.findViewById(R.id.leftButton);
@@ -172,16 +191,32 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
 
                 switch(msg.what) {
                     case Constants.DO_UI_TEXT:
-                        testMsg("" + msg.getData().getInt("Text"));
+                        if (currentMode == msg.getData().getInt("Mode"))
+                            testMsg("" + msg.getData().getInt("Text"));
                         break;
                     case Constants.DO_UI_IMAGE:
-                        setImage(msg.getData().getByteArray("Image"));
+                        if (currentMode == msg.getData().getInt("Mode"))
+                            setImage(msg.getData().getByteArray("Image"));
                         break;
                 }
             }
         };
 
         return view;
+    }
+
+    /**
+     * Method to show and hide the button layout
+     * @param isVisible true to show tab, false to hide
+     */
+    public void buttonLayoutVisibility(boolean isVisible) {
+        if (isVisible) {
+            buttonLayout.animate().cancel();
+            buttonLayout.animate().translationY(buttonLayoutBaseYCoordinate);
+        } else {
+            buttonLayout.animate().cancel();
+            buttonLayout.animate().translationY(buttonLayoutBaseYCoordinate + 500);
+        }
     }
 
     private void setImageRequestSizes() {
@@ -198,7 +233,7 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
         Log.e("REQUESTINGSIZE", screenRatio + " " + ImageListener.DeviceWidth + " " + ImageListener.DeviceHeight);
     }
 
-    private void sendMessage(String message) {
+    public static void sendMessage(String message) {
         if (isConnected && out != null) {
             // Send message to server
             //Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
@@ -233,12 +268,12 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        if(v == leftButton) {
+        if (v == leftButton) {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:   sendMessage(Constants.LEFTMOUSEDOWN);    break;
                 case MotionEvent.ACTION_UP:       sendMessage(Constants.LEFTMOUSEUP);      break;
             }
-        }else if(v == rightButton) {
+        } else if(v == rightButton) {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:   sendMessage(Constants.RIGHTMOUSEDOWN);    break;
                 case MotionEvent.ACTION_UP:       sendMessage(Constants.RIGHTMOUSEUP);      break;
@@ -350,10 +385,10 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
         super.onDestroy();
         if(isConnected && out != null) {
             try {
-                out.println("exit"); //tell server to exit
-                socket.close(); //close socket
+                out.println("exit"); // Tell server to exit
+                if (socket != null) socket.close(); // Close socket
             } catch (IOException e) {
-                Log.e("remotecontrol", "Error in closing socket", e);
+                Log.e("[RCF]", "Error in closing socket", e);
             }
         }
     }
@@ -362,26 +397,45 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
     public boolean onMenuItemClick(MenuItem item) {
         int id = item.getItemId();
 
-        if(id == R.id.action_receiver) {
-            if(connectServerTask != null)
-                return false;
-
-            if(listener == null) {
+        if (currentMode == NONE) {
+            if (!isConnected && connectServerTask == null) {
                 // Show a progress spinner, and try to connect to server in another thread.
                 showProgress(true);
                 connectServerTask = new ConnectServerTask();
                 connectServerTask.execute(LinkCloud.SERVER_IP);
+            }
+            else return false;
+        }
 
-                listener = new Thread(new ImageListener(Constants.LISTEN_PORT, Constants.FRAMES_PER_SECOND, messageHandler));
+        if (id == R.id.action_receiver) {
+            // If listener is null -> start image listener, or reconnect image listener
+            if(listener == null || !ImageListener.isConnected) {
+                Log.i("[RCF]", "Start receiver");
+                ImageProvider.isConnected = false;
+                provider = null;
+
+                currentMode = MODE_CONTROL;
+                listener = new Thread(new ImageListener(in, Constants.FRAMES_PER_SECOND, messageHandler));
                 listener.start();
+
+                buttonLayoutVisibility(true);
 
                 return true;
             }
         }
-        if(id == R.id.action_transmitter) {
-            if(provider == null) {
-                Thread provider = new Thread(new ImageProvider(Constants.SERVER_RECVIMAGE, getActivity(), messageHandler));
+        if (id == R.id.action_transmitter) {
+            if (provider == null || !ImageProvider.isConnected) {
+                Log.i("[RCF]", "Start provider");
+                ImageListener.isConnected = false;
+                listener = null;
+                
+                currentMode = MODE_SHARE;
+                provider = new Thread(new ImageProvider(socket, getActivity(), messageHandler));
                 provider.start();
+
+                buttonLayoutVisibility(false);
+
+                return true;
             }
         }
 
@@ -446,10 +500,10 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
             boolean result = true;
             try {
                 InetAddress serverAddr = InetAddress.getByName(params[0]);
-                Log.d("remotedroid", serverAddr.toString());
+                Log.d("[RCF]", serverAddr.toString());
                 socket = new Socket(serverAddr, Constants.SERVER_PORT); // Open socket on server IP and port
             } catch (IOException e) {
-                Log.e("remotedroid", "Error while connecting", e);
+                Log.e("[RCF]", "Error while connecting", e);
                 result = false;
             }
             return result;
@@ -466,9 +520,10 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
                 if(isConnected) {
                     out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket
                             .getOutputStream())), true); //create output stream to send data to server
+                    in = socket.getInputStream();
                 }
             } catch (IOException e){
-                Log.e("remotedroid", "Error while creating OutWriter", e);
+                Log.e("[RCF]", "Error while creating OutWriter", e);
                 Toast.makeText(context, "Error while connecting", Toast.LENGTH_LONG).show();
             }
         }

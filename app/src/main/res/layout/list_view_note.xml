@@ -23,6 +23,7 @@
         android:textStyle="bold"
         android:textSize="25sp"
         android:maxLines="1"
+        android:ellipsize="end"
         android:textColor="@color/black_95"
         android:paddingBottom="8dp" />
 
@@ -38,6 +39,7 @@
         android:layout_alignEnd="@+id/titleView"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:maxLines="5"
+        android:ellipsize="end"
         android:textColor="@color/black_95"
         android:paddingBottom="8dp" />
 
@@ -56,13 +58,13 @@
     <ImageButton
         android:layout_width="35dp"
         android:layout_height="35dp"
-        android:id="@+id/control"
+        android:id="@+id/edit"
         android:layout_alignParentRight="true"
         android:layout_marginRight="10dp"
         android:layout_centerVertical="true"
         android:background="@color/transparent"
         android:contentDescription="開始會議"
         android:scaleType="fitXY"
-        android:src="@drawable/ic_play_arrow_black_24dp" />
+        android:src="@drawable/ic_edit_black_24dp" />
 
 </RelativeLayout>

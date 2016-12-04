@@ -69,7 +69,7 @@ public class FutureMeetingFragment extends Fragment {
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         newNote = (ImageButton) view.findViewById(R.id.newNote);
         noNotes = (TextView) view.findViewById(R.id.noNotes);
 

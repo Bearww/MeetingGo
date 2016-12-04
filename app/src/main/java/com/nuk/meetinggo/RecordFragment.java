@@ -34,10 +34,10 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.nuk.meetinggo.DataUtils.NEW_RECORD_REQUEST;
-import static com.nuk.meetinggo.DataUtils.NOTE_BODY;
 import static com.nuk.meetinggo.DataUtils.RECORDS_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.RECORD_BODY;
 import static com.nuk.meetinggo.DataUtils.RECORD_FAVOURED;
@@ -47,6 +47,7 @@ import static com.nuk.meetinggo.DataUtils.deleteRecords;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
+import static com.nuk.meetinggo.RemoteActivity.topicBody;
 
 public class RecordFragment extends Fragment implements AdapterView.OnItemClickListener,
         Toolbar.OnMenuItemClickListener, AbsListView.MultiChoiceModeListener,
@@ -117,7 +118,7 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         bodyView = (TextView) view.findViewById(R.id.bodyView);
         newRecord = (ImageButton) view.findViewById(R.id.newRecord);
         noRecords = (TextView) view.findViewById(R.id.noRecords);
@@ -125,12 +126,7 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
         if (toolbar != null)
             initToolbar();
 
-        // Get data bundle from MainFragment
-        bundle = getArguments();
-
-        if (bundle != null) {
-            bodyView.setText(bundle.getString(NOTE_BODY));
-        }
+        bodyView.setText(topicBody);
 
         newRecordButtonBaseYCoordinate = newRecord.getY();
 
@@ -722,9 +718,34 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
                 }
                 return true;
             }
-            else if (requestCode == NEW_RECORD_REQUEST) {
-                // Link to cloud
-                return true;
+            else {
+                try {
+                    // Link to cloud
+                    Log.i("[RF]", "create record form");
+                    Map<String, String> form = new HashMap<>();
+
+                    // Add new record to form
+                    form.put("topic_id", String.valueOf(MeetingInfo.topicID));
+                    form.put("record", mRecord);
+
+                    // Save new record
+                    if (requestCode == NEW_RECORD_REQUEST) {
+                        // Insert to database
+                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_RECORD);
+                        if (mLinkSuccess = LinkCloud.hasData())
+                            return true;
+                    }
+                    // Update existed record
+                    else {
+                        // Update database
+                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_RECORD);
+                        if (mLinkSuccess = LinkCloud.hasData())
+                            return true;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
             }
 
             return false;

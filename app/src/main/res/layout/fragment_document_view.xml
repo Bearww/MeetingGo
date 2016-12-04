@@ -33,7 +33,7 @@
         android:textStyle="bold"
         android:textColorHint="@color/black_50"
         android:textColor="@color/black_95" />
-
+<!--
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -45,23 +45,22 @@
         android:clipToPadding="false"
         android:paddingTop="8dp"
         android:paddingBottom="8dp" >
-
+-->
         <WebView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:id="@+id/bodyView"
             android:background="@color/transparent"
+            android:layout_below="@+id/titleText"
             android:gravity="start|end"
-            android:ems="10"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:paddingLeft="10dp"
             android:paddingRight="10dp"
-            android:hint="@string/document_body"
-            android:textSize="18sp"
-            android:textColorHint="@color/black_50"
-            android:textColor="@color/black_95" />
-
+            android:layout_alignParentBottom="true" />
+<!--
     </ScrollView>
-
+-->
     <View
         android:layout_width="match_parent"
         android:layout_height="@dimen/shadow_elevation"

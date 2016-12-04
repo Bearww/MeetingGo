@@ -153,7 +153,7 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
         
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         newMember = (ImageButton) view.findViewById(R.id.newMember);
         
         if (toolbar != null)

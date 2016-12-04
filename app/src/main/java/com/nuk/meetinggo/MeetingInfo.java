@@ -9,6 +9,7 @@ public class MeetingInfo {
     public final static String TAG_TAB_POLL = "poll";
     public final static String TAG_TAB_RECORD = "record";
     public final static String TAG_TAB_SETTING = "setting";
+    public final static String TAG_TAB_CONTROL = "control";
 
     //----------------------------------------------------------------------------------------------//
 

@@ -35,6 +35,8 @@ import static com.nuk.meetinggo.MainFragment.getLocalPath;
 
 public class DataUtils {
 
+    public static final String APP_FOLDER_NAME = "/MeetingGo/"; // Local app folder name
+
     public static final String NOTES_FILE_NAME = "notes.json"; // Local notes file name
     public static final String NOTES_ARRAY_NAME = "notes"; // Root object name
 
@@ -101,8 +103,11 @@ public class DataUtils {
     public static final int NEW_DOCUMENT_REQUEST = 90000;
     public static final String DOCUMENT_REQUEST_CODE = "requestCode";
     public static final String DOCUMENT_TITLE = "title";
-    public static final String DOCUMENT_REFERENCE = "reference";
+    public static final String DOCUMENT_TOPIC = "topic";
     public static final String DOCUMENT_LINK = "link";
+    public static final String DOCUMENT_VIEW = "view";
+    public static final String DOCUMENT_DOWNLOADED = "downloaded";
+    public static final String DOCUMENT_PATH = "path";
     public static final String DOCUMENT_FAVOURED = "favoured";
     public static final String DOCUMENT_RECEIVER = "receiver";
 
@@ -182,7 +187,8 @@ public class DataUtils {
         }
 
         // If file is local and it doesn't exist -> create file
-        else if (toFile == getLocalPath() && !toFile.exists()) {
+        //else if (toFile == getLocalPath() && !toFile.exists()) {
+        else if (!toFile.exists()) {
             try {
                 Boolean created = toFile.createNewFile();
 

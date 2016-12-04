@@ -80,6 +80,8 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
     // For disabling long clicks, favourite clicks and modifying the item click pattern
     public static boolean searchActive = false;
     private ArrayList<Integer> realIndexesOfSearchResults; // To keep track of real indexes in searched questions
+    private static ArrayList<Integer> realIndexesOfFilterResults; // To keep track of real indexes in filtered questions
+    private static JSONArray filteredQuestions; // Filtered questions array
 
     private int lastFirstVisibleItem = -1; // Last first item seen in list view scroll changed
     private float newQuestionButtonBaseYCoordinate; // Base Y coordinate of newQuestion button
@@ -87,8 +89,6 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
     private AlertDialog addQuestionDialog;
 
     private DetachableResultReceiver mReceiver;
-
-    private String addQuestionLink = "back_end/meeting/set_info/set_meeting_question.php?meeting_id=" + meetingID;
 
     private LinkCloudTask linkTask;
 
@@ -111,6 +111,9 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
         if (tempQuestions != null)
             questions = tempQuestions;
 
+        // Filter topic id from questions
+        filteredQuestions = filterQuestion();
+
         mReceiver = new DetachableResultReceiver(new Handler());
         mReceiver.setReceiver(this);
     }
@@ -121,7 +124,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         newQuestion = (ImageButton) view.findViewById(R.id.newQuestion);
         noQuestions = (TextView) view.findViewById(R.id.noQuestions);
 
@@ -130,8 +133,8 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
         newQuestionButtonBaseYCoordinate = newQuestion.getY();
 
-        // Initialize QuestionAdapter with questions array
-        adapter = new QuestionAdapter(getContext(), questions);
+        // Initialize QuestionAdapter with filtered questions array
+        adapter = new QuestionAdapter(getContext(), filteredQuestions);
         listView.setAdapter(adapter);
 
         // Set item click, multi choice and scroll listeners
@@ -175,7 +178,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
         });
 
         // If no questions -> show 'Press + to add new question' text, invisible otherwise
-        if (questions.length() == 0)
+        if (filteredQuestions.length() == 0)
             noQuestions.setVisibility(View.VISIBLE);
 
         else
@@ -226,7 +229,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
                                     // Init realIndexes array
                                     realIndexesOfSearchResults = new ArrayList<Integer>();
-                                    for (int i = 0; i < questions.length(); i++)
+                                    for (int i = 0; i < filteredQuestions.length(); i++)
                                         realIndexesOfSearchResults.add(i);
 
                                     adapter.notifyDataSetChanged();
@@ -281,7 +284,6 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                             newQuestionObject.putString(QUESTION_COLOUR, "#FFFFFF");
                             newQuestionObject.putBoolean(QUESTION_FAVOURED, false);
                             newQuestionObject.putInt(QUESTION_FONT_SIZE, 18);
-                            newQuestionObject.putString(ANSWER_ARRAY, (new JSONArray()).toString());
 
                             // Send to cloud
                             onReceiveResult(NEW_QUESTION_REQUEST, Activity.RESULT_OK, newQuestionObject);
@@ -299,7 +301,59 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
     }
 
     /**
-     * If item clicked in list view -> Start EditQuestionFragment intent with position as requestCode
+     * Implementation of filter question
+     */
+    protected static JSONArray filterQuestion() {
+
+        JSONArray questionsFiltered = new JSONArray();
+        realIndexesOfFilterResults = new ArrayList<>();
+
+        if (MeetingInfo.topicID != 0) {
+            // Loop through main questions list
+            for (int i = 0; i < questions.length(); i++) {
+                JSONObject question = null;
+
+                // Get question at position i
+                try {
+                    question = questions.getJSONObject(i);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                // If question not null and title/body contain query text
+                // -> Put in new questions array and add i to realIndexes array
+                if (question != null) {
+                    try {
+                        if (question.getString(QUESTION_TOPIC).equals(String.valueOf(MeetingInfo.topicID))) {
+
+                            questionsFiltered.put(question);
+                            realIndexesOfFilterResults.add(i);
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        else {
+            for (int i = 0; i < questions.length(); i++) {
+                try {
+                    questionsFiltered.put(questions.getJSONObject(i));
+                    realIndexesOfFilterResults.add(i);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        Log.i("[QF]", questionsFiltered.length() + "/" + questions.length());
+
+        return questionsFiltered;
+    }
+
+    /**
+     * If item clicked in list view -> Start ViewQuestionFragment intent with position as requestCode
      */
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -310,17 +364,18 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
         args.putParcelable(QUESTION_RECEIVER, mReceiver);
         Log.i("[QF]", "Put receiver " + mReceiver.toString());
 
-        // If search is active -> use position from realIndexesOfSearchResults for EditQuestionFragment
+        // If search is active -> use position from realIndexesOfSearchResults for ViewQuestionFragment
         if (searchActive) {
             int newPosition = realIndexesOfSearchResults.get(position);
 
             try {
                 // Package selected question content and send to ViewQuestionFragment
+                args.putString(QUESTION_ID, questions.getJSONObject(newPosition).getString(QUESTION_ID));
                 args.putString(QUESTION_TITLE, questions.getJSONObject(newPosition).getString(QUESTION_TITLE));
                 args.putString(QUESTION_BODY, questions.getJSONObject(newPosition).getString(QUESTION_BODY));
                 args.putString(QUESTION_COLOUR, questions.getJSONObject(newPosition).getString(QUESTION_COLOUR));
                 args.putInt(QUESTION_FONT_SIZE, questions.getJSONObject(newPosition).getInt(QUESTION_FONT_SIZE));
-                args.putString(ANSWER_ARRAY, questions.getJSONObject(newPosition).getString(ANSWER_ARRAY));
+                args.putString(ANSWER_ARRAY, questions.getJSONObject(newPosition).getJSONArray(ANSWER_ARRAY).toString());
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -329,15 +384,16 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
             args.putInt(QUESTION_REQUEST_CODE, newPosition);
         }
 
-        // If search is not active -> use normal position for EditQuestionFragment
+        // If search is not active -> use normal position for ViewQuestionFragment
         else {
             try {
-                // Package selected question content and send to EditQuestionFragment
+                // Package selected question content and send to ViewQuestionFragment
+                args.putString(QUESTION_ID, questions.getJSONObject(position).getString(QUESTION_ID));
                 args.putString(QUESTION_TITLE, questions.getJSONObject(position).getString(QUESTION_TITLE));
                 args.putString(QUESTION_BODY, questions.getJSONObject(position).getString(QUESTION_BODY));
                 args.putString(QUESTION_COLOUR, questions.getJSONObject(position).getString(QUESTION_COLOUR));
                 args.putInt(QUESTION_FONT_SIZE, questions.getJSONObject(position).getInt(QUESTION_FONT_SIZE));
-                args.putString(ANSWER_ARRAY, questions.getJSONObject(position).getString(ANSWER_ARRAY));
+                args.putString(ANSWER_ARRAY, questions.getJSONObject(position).getJSONArray(ANSWER_ARRAY).toString());
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -422,7 +478,8 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                             questions = deleteQuestions(questions, checkedArray);
 
                             // Create and set new adapter with new questions array
-                            adapter = new QuestionAdapter(getContext(), questions);
+                            filteredQuestions = filterQuestion();
+                            adapter = new QuestionAdapter(getContext(), filteredQuestions);
                             listView.setAdapter(adapter);
 
                             // Attempt to save questions to local file
@@ -444,7 +501,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                             });
 
                             // If no questions -> show 'Press + to add new question' text, invisible otherwise
-                            if (questions.length() == 0)
+                            if (filteredQuestions.length() == 0)
                                 noQuestions.setVisibility(View.VISIBLE);
 
                             else
@@ -523,12 +580,12 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
             realIndexesOfSearchResults = new ArrayList<Integer>();
 
             // Loop through main questions list
-            for (int i = 0; i < questions.length(); i++) {
+            for (int i = 0; i < filteredQuestions.length(); i++) {
                 JSONObject question = null;
 
                 // Get question at position i
                 try {
-                    question = questions.getJSONObject(i);
+                    question = filteredQuestions.getJSONObject(i);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -559,10 +616,10 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
         // If query text length is 0 -> re-init realIndexes array (0 to length) and reset adapter
         else {
             realIndexesOfSearchResults = new ArrayList<Integer>();
-            for (int i = 0; i < questions.length(); i++)
+            for (int i = 0; i < filteredQuestions.length(); i++)
                 realIndexesOfSearchResults.add(i);
 
-            adapter = new QuestionAdapter(getContext(), questions);
+            adapter = new QuestionAdapter(getContext(), filteredQuestions);
             listView.setAdapter(adapter);
         }
 
@@ -581,7 +638,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
      */
     protected void searchEnded() {
         searchActive = false;
-        adapter = new QuestionAdapter(getContext(), questions);
+        adapter = new QuestionAdapter(getContext(), filteredQuestions);
         listView.setAdapter(adapter);
         listView.setLongClickable(true);
         newQuestionButtonVisibility(true);
@@ -594,11 +651,12 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
      * @param position position of question
      */
     public static void setFavourite(Context context, boolean favourite, int position) {
+
         JSONObject newFavourite = null;
 
         // Get question at position and store in newFavourite
         try {
-            newFavourite = questions.getJSONObject(position);
+            newFavourite = filteredQuestions.getJSONObject(position);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -628,7 +686,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
                     // Copy contents to new sorted array without favoured element
                     for (int i = 0; i < questions.length(); i++) {
-                        if (i != position) {
+                        if (i != realIndexesOfFilterResults.get(position)) {
                             try {
                                 newArray.put(questions.get(i));
 
@@ -640,7 +698,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
                     // Equal main questions array with new sorted array and reset adapter
                     questions = newArray;
-                    adapter = new QuestionAdapter(context, questions);
+                    adapter = new QuestionAdapter(context, filteredQuestions = filterQuestion());
                     listView.setAdapter(adapter);
 
                     // Smooth scroll to top
@@ -654,7 +712,8 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                 // If favoured question was first -> just update object in questions array and notify adapter
                 else {
                     try {
-                        questions.put(position, newFavourite);
+                        questions.put(realIndexesOfFilterResults.get(position), newFavourite);
+                        filteredQuestions.put(position, newFavourite);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -668,7 +727,8 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
             else {
                 try {
                     newFavourite.put(QUESTION_FAVOURED, false);
-                    questions.put(position, newFavourite);
+                    questions.put(realIndexesOfFilterResults.get(position), newFavourite);
+                    filteredQuestions.put(position, newFavourite);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -826,13 +886,14 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                                         question.put(ANSWER_ARRAY, questionAnswer);
 
                                         questions.put(question);
+                                        filteredQuestions.put(question);
                                     }
                                     // Update existed question
                                     else {
                                         question = questions.getJSONObject(position);
                                         questionAnswer = question.getJSONArray(ANSWER_ARRAY);
 
-                                        // TODO update first message
+                                        // Update first message
                                         if (!TextUtils.isEmpty(answer.getString(i)))
                                             if (questionAnswer.length() > 0)
                                                 questionAnswer.put(0, answer.getString(i));
@@ -843,6 +904,13 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                                         question.put(ANSWER_ARRAY, questionAnswer);
 
                                         questions.put(position, question);
+
+                                        for (int j = 0; j < filteredQuestions.length(); j++) {
+                                            if (position == realIndexesOfFilterResults.get(j)) {
+                                                filteredQuestions.put(realIndexesOfFilterResults.get(j), question);
+                                                break;
+                                            }
+                                        }
                                     }
                                 }
 
@@ -859,32 +927,28 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                     else
                         Log.i("[QF]", "No content key " + CONTENT_OBJECT);
                 }
-                
-                Log.i("[QF]", "create question form");
-                Map<String, String> form = new HashMap<>();
-
-                // TODO send data to cloud
-                // Add new question to form
-                form.put("question", resultData.getString(QUESTION_TITLE));
-                //form.put("content", resultData.getString(QUESTION_BODY));
-                //form.put(QUESTION_COLOUR, resultData.getString(QUESTION_COLOUR));
-                //form.put(QUESTION_FAVOURED, false);
-                //form.put(QUESTION_FONT_SIZE, resultData.getInt(QUESTION_FONT_SIZE));
-                //form.put(QUESTION_HIDE_BODY, resultData.getBoolean(QUESTION_HIDE_BODY));
-
-                // Save new question
-                if (requestCode == NEW_QUESTION_REQUEST) {
-                    // Insert to database
-                    mLinkData = LinkCloud.submitFormPost(form, addQuestionLink);
-                    if (mLinkSuccess = LinkCloud.hasData())
-                        return true;
-                }
-                // Update exsited question
                 else {
-                    // Update database
-                    mLinkData = LinkCloud.submitFormPost(form, addQuestionLink);
-                    if (mLinkSuccess = LinkCloud.hasData())
-                        return true;
+                    Log.i("[QF]", "create question form");
+                    Map<String, String> form = new HashMap<>();
+
+                    // Add new question to form
+                    form.put("topic_id", String.valueOf(MeetingInfo.topicID));
+                    form.put("question", resultData.getString(QUESTION_TITLE));
+
+                    // Save new question
+                    if (requestCode == NEW_QUESTION_REQUEST) {
+                        // Insert to database
+                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_QUESTION);
+                        if (mLinkSuccess = LinkCloud.hasData())
+                            return true;
+                    }
+                    // Update exsited question
+                    else {
+                        // Update database
+                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_QUESTION);
+                        if (mLinkSuccess = LinkCloud.hasData())
+                            return true;
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -915,7 +979,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         toast.show();
                     }
 
-                    if (questions.length() == 0)
+                    if (filteredQuestions.length() == 0)
                         noQuestions.setVisibility(View.VISIBLE);
                     else
                         noQuestions.setVisibility(View.INVISIBLE);
@@ -931,11 +995,13 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         newQuestionObject.put(QUESTION_TITLE, resultData.getString(QUESTION_TITLE));
                         newQuestionObject.put(QUESTION_BODY, resultData.getString(QUESTION_BODY));
                         newQuestionObject.put(QUESTION_COLOUR, resultData.getString(QUESTION_COLOUR));
+                        newQuestionObject.put(QUESTION_TOPIC, String.valueOf(MeetingInfo.topicID));
                         newQuestionObject.put(QUESTION_FAVOURED, false);
                         newQuestionObject.put(QUESTION_FONT_SIZE, resultData.getInt(QUESTION_FONT_SIZE));
-                        newQuestionObject.put(ANSWER_ARRAY, new JSONArray(resultData.getString(ANSWER_ARRAY)));
+                        newQuestionObject.put(ANSWER_ARRAY, new JSONArray());
 
                         questions.put(newQuestionObject);
+                        filteredQuestions.put(newQuestionObject);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -955,7 +1021,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         }
 
                         // If no questions -> show 'Press + to add new question' text, invisible otherwise
-                        if (questions.length() == 0)
+                        if (filteredQuestions.length() == 0)
                             noQuestions.setVisibility(View.VISIBLE);
 
                         else
@@ -976,7 +1042,8 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         newQuestionObject.put(ANSWER_ARRAY, resultData.getString(ANSWER_ARRAY));
 
                         // Update question at position 'requestCode'
-                        questions.put(requestCode, newQuestionObject);
+                        questions.put(realIndexesOfFilterResults.get(requestCode), newQuestionObject);
+                        filteredQuestions.put(requestCode, newQuestionObject);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -984,6 +1051,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
                     // If newQuestionObject not null -> save questions array to local file and notify adapter
                     if (newQuestionObject != null) {
+                        filterQuestion();
                         adapter.notifyDataSetChanged();
 
                         Boolean saveSuccessful = saveData(localPath, questions);
@@ -996,7 +1064,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         }
 
                         // If no questions -> show 'Press + to add new question' text, invisible otherwise
-                        if (questions.length() == 0)
+                        if (filteredQuestions.length() == 0)
                             noQuestions.setVisibility(View.VISIBLE);
 
                         else

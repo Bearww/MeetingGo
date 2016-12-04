@@ -22,9 +22,9 @@ import android.widget.TextView;
 
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_LINK;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_RECEIVER;
-import static com.nuk.meetinggo.DataUtils.DOCUMENT_REFERENCE;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_TITLE;
+import static com.nuk.meetinggo.DataUtils.DOCUMENT_VIEW;
 import static com.nuk.meetinggo.DataUtils.NEW_DOCUMENT_REQUEST;
 
 public class ViewDocumentFragment extends Fragment implements Toolbar.OnMenuItemClickListener, IOnFocusListenable {
@@ -60,6 +60,11 @@ public class ViewDocumentFragment extends Fragment implements Toolbar.OnMenuItem
         colourArrResId = new int[colourArr.length];
         for (int i = 0; i < colourArr.length; i++)
             colourArrResId[i] = Color.parseColor(colourArr[i]);
+
+        if (MeetingInfo.topicID == 0)
+            MeetingActivity.tabLayoutVisibility(false);
+        else
+            RemoteActivity.tabLayoutVisibility(false);
     }
 
     @Override
@@ -84,10 +89,11 @@ public class ViewDocumentFragment extends Fragment implements Toolbar.OnMenuItem
             // If current document is not new -> initialize colour, font, hideBody and Textviews
             if (bundle.getInt(DOCUMENT_REQUEST_CODE) != NEW_DOCUMENT_REQUEST) {
                 titleText.setText(bundle.getString(DOCUMENT_TITLE));
-                toolbar.setTitle(bundle.getString(DOCUMENT_REFERENCE));
 
+                Log.i("[VDF]", "Link " + bundle.getString(DOCUMENT_VIEW));
                 bodyView.getSettings().setJavaScriptEnabled(true);
-                bodyView.loadUrl(bundle.getString(DOCUMENT_LINK));
+                //bodyView.getSettings().setAllowFileAccess(true);
+                bodyView.loadUrl(bundle.getString(DOCUMENT_VIEW));
             }
 
             // Set background colour to document colour
@@ -192,7 +198,6 @@ public class ViewDocumentFragment extends Fragment implements Toolbar.OnMenuItem
         // Package everything and send back to activity with OK
         changes.putString(DOCUMENT_TITLE, titleText.getText().toString());
         changes.putString(DOCUMENT_LINK, bodyView.getUrl());
-        changes.putString(DOCUMENT_REFERENCE, toolbar.getTitle().toString());
 
         //getActivity().setResult(Activity.RESULT_OK, intent);
         receiver.onReceiveResult(bundle.getInt(DOCUMENT_REQUEST_CODE), Activity.RESULT_OK, changes);

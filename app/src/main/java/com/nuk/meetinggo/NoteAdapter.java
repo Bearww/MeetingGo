@@ -1,12 +1,14 @@
 package com.nuk.meetinggo;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,13 +29,14 @@ import static com.nuk.meetinggo.DataUtils.NOTE_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.NOTE_FONT_SIZE;
 import static com.nuk.meetinggo.DataUtils.NOTE_HIDE_BODY;
 import static com.nuk.meetinggo.DataUtils.NOTE_ID;
+import static com.nuk.meetinggo.DataUtils.NOTE_RECEIVER;
+import static com.nuk.meetinggo.DataUtils.NOTE_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.NOTE_TITLE;
 import static com.nuk.meetinggo.MainFragment.checkedArray;
 import static com.nuk.meetinggo.MainFragment.deleteActive;
 import static com.nuk.meetinggo.MainFragment.searchActive;
 import static com.nuk.meetinggo.MainFragment.setFavourite;
 import static com.nuk.meetinggo.MeetingInfo.getControllable;
-import static com.nuk.meetinggo.MeetingInfo.topicID;
 
 /**
  * Adapter class for custom notes ListView
@@ -42,15 +45,19 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
     private Context context;
     private JSONArray adapterData;
     private LayoutInflater inflater;
+    private DetachableResultReceiver receiver;
+    private FragmentManager manager;
 
     /**
      * Adapter constructor -> Sets class variables
      * @param context application context
      * @param adapterData JSONArray of notes
      */
-    public NoteAdapter(Context context, JSONArray adapterData) {
+    public NoteAdapter(Context context, JSONArray adapterData, FragmentManager manager, DetachableResultReceiver receiver) {
         this.context = context;
         this.adapterData = adapterData;
+        this.manager = manager;
+        this.receiver = receiver;
         this.inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
@@ -93,10 +100,10 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
         TextView titleView = (TextView) convertView.findViewById(R.id.titleView);
         TextView bodyView = (TextView) convertView.findViewById(R.id.bodyView);
         ImageButton favourite = (ImageButton) convertView.findViewById(R.id.favourite);
-        ImageButton control = (ImageButton) convertView.findViewById(R.id.control);
+        ImageButton edit = (ImageButton) convertView.findViewById(R.id.edit);
 
         // Get Note object at position
-        JSONObject noteObject = getItem(position);
+        final JSONObject noteObject = getItem(position);
 
         if (noteObject != null) {
             // If noteObject not empty -> initialize variables
@@ -141,19 +148,19 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
             // If search or delete modes are active -> hide favourite button; Show otherwise
             if (searchActive || deleteActive) {
                 favourite.setVisibility(View.INVISIBLE);
-                if(controlled) control.setVisibility(View.INVISIBLE);
+                if(controlled) edit.setVisibility(View.INVISIBLE);
             }
             else {
                 favourite.setVisibility(View.VISIBLE);
-                if(controlled) control.setVisibility(View.VISIBLE);
+                if(controlled) edit.setVisibility(View.VISIBLE);
             }
 
-            // If presenter modes are active -> show control button; Hide otherwise
+            // If presenter modes are active -> show edit button; Hide otherwise
             if (controlled)
-                control.setVisibility(View.VISIBLE);
+                edit.setVisibility(View.VISIBLE);
 
             else
-                control.setVisibility(View.GONE);
+                edit.setVisibility(View.GONE);
 
             titleView.setText(title);
 
@@ -196,17 +203,39 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
 
             final int finalID = id;
             final String finalBody = body;
-            control.setOnClickListener(new View.OnClickListener() {
+            edit.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Bundle bundle = new Bundle();
 
-                    bundle.putString(NOTE_BODY, finalBody);
+                    // Create fragment and give it an argument
+                    EditNoteFragment editFragment = new EditNoteFragment();
 
-                    Intent intent = new Intent(context, RemoteActivity.class);
-                    intent.putExtras(bundle);
-                    topicID = finalID;
-                    context.startActivity(intent);
+                    Bundle args = new Bundle();
+
+                    try {
+                        Log.i("[MF]", "Put receiver " + receiver.toString());
+                        args.putParcelable(NOTE_RECEIVER, receiver);
+                        args.putString(NOTE_TITLE, noteObject.getString(NOTE_TITLE));
+                        args.putString(NOTE_BODY, noteObject.getString(NOTE_BODY));
+                        args.putString(NOTE_COLOUR, noteObject.getString(NOTE_COLOUR));
+                        args.putInt(NOTE_FONT_SIZE, noteObject.getInt(NOTE_FONT_SIZE));
+                        args.putInt(NOTE_ID, noteObject.getInt(NOTE_ID));
+                        args.putInt(NOTE_REQUEST_CODE, position);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                    editFragment.setArguments(args);
+
+                    FragmentTransaction transaction = manager.beginTransaction();
+
+                    // Replace whatever is in the fragment_container view with this fragment,
+                    // and add the transaction to the back stack so the user can navigate back
+                    transaction.replace(R.id.layout_container, editFragment);
+                    transaction.addToBackStack(null);
+
+                    // Commit the transaction
+                    transaction.commit();
                 }
             });
         }

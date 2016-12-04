@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -53,17 +54,20 @@ import static com.nuk.meetinggo.MeetingInfo.TAG_TAB_SETTING;
 import static com.nuk.meetinggo.MeetingInfo.TAG_TAB_TOPIC;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 import static com.nuk.meetinggo.MeetingInfo.topicID;
+import static com.nuk.meetinggo.DataUtils.NOTE_ID;
+import static com.nuk.meetinggo.DataUtils.NOTE_BODY;
 
-public class MeetingActivity extends AppCompatActivity {
+public class MeetingActivity extends AppCompatActivity implements ActivityCommunicator {
 
     private static Context context;
+    private PagerAdapter adapter;
 
     private CloudListener mListener;
     private Thread mThread;
 
     private static Toolbar toolbar;
     private static TabLayout tabLayout;
-    private Fragment currentFragment = null;
+    private int currentFragment = -1;
 
     private static float tabLayoutBaseYCoordinate; // Base Y coordinate of tab layout
 
@@ -106,14 +110,14 @@ public class MeetingActivity extends AppCompatActivity {
         tabLayoutBaseYCoordinate = tabLayout.getY();
 
         final ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
-        final PagerAdapter adapter = new PagerAdapter
-                (getSupportFragmentManager(), tabLayout.getTabCount());
+        adapter = new PagerAdapter(getSupportFragmentManager(), tabLayout.getTabCount());
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         tabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 viewPager.setCurrentItem(tab.getPosition());
+                currentFragment = tab.getPosition();
                 mListener.fragmentChanged(adapter.getItem(tab.getPosition()));
             }
 
@@ -127,7 +131,7 @@ public class MeetingActivity extends AppCompatActivity {
 
             }
         });
-        currentFragment = adapter.getItem(0);
+        currentFragment = 0;
 
         Bundle bundle = getIntent().getExtras();
         if(bundle != null) {
@@ -158,7 +162,11 @@ public class MeetingActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
+        topicID = 0;
         mListener.listenStop = false;
+
+        if (currentFragment != -1)
+            mListener.fragmentChanged(adapter.getItem(currentFragment));
 
         super.onResume();
     }
@@ -213,10 +221,23 @@ public class MeetingActivity extends AppCompatActivity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        Fragment fragment = adapter.getItem(currentFragment);
 
-        if(currentFragment instanceof IOnFocusListenable) {
-            ((IOnFocusListenable) currentFragment).onWindowFocusChanged(hasFocus);
+        if(fragment instanceof IOnFocusListenable) {
+            ((IOnFocusListenable) fragment).onWindowFocusChanged(hasFocus);
         }
+    }
+
+    @Override
+    public void passDataToActivity(Bundle bundle) {
+        Intent intent = new Intent(this, RemoteActivity.class);
+
+        if (bundle != null) {
+            intent.putExtra(NOTE_ID, bundle.getInt(NOTE_ID));
+            intent.putExtra(NOTE_BODY, bundle.getString(NOTE_BODY));
+        }
+
+        startActivity(intent);
     }
 
     /**
@@ -259,8 +280,18 @@ public class MeetingActivity extends AppCompatActivity {
         private JSONObject mLink;
         private JSONObject mForm;
 
+        private int mTimes;
+        private int MAX_RETRY_TIMES = 5;
+        private int LINK_SUCCESS = 6000;
+
         LinkCloudTask(String url) {
             mUrl = url;
+            mTimes = 0;
+        }
+
+        LinkCloudTask(String url, int times) {
+            mUrl = url;
+            mTimes = times;
         }
 
         @Override
@@ -269,23 +300,17 @@ public class MeetingActivity extends AppCompatActivity {
                 try {
                     mObject = LinkCloud.request(mUrl);
 
-                    for (int i = 1; i <= 5; i++) {
-                        Thread.sleep(500);
-
-                        if (mObject.has(CONTENT_LINK) && mObject.has(CONTENT_FORM)) {
-                            mLink = mObject.getJSONObject(CONTENT_LINK);
-                            mForm = mObject.getJSONObject(CONTENT_FORM);
-                            return true;
-                        } else
-                            Log.i("[MA]", "Test " + i + ": No content "
-                                    + (mObject.has(CONTENT_LINK) ? "" : CONTENT_LINK) + " "
-                                    + (mObject.has(CONTENT_FORM) ? "" : CONTENT_FORM));
-                    }
+                    if (mObject != null && mObject.has(CONTENT_LINK) && mObject.has(CONTENT_FORM)) {
+                        mLink = mObject.getJSONObject(CONTENT_LINK);
+                        mForm = mObject.getJSONObject(CONTENT_FORM);
+                        return true;
+                    } else
+                        Log.i("[MA]", "No content "
+                                + (mObject.has(CONTENT_LINK) ? "" : CONTENT_LINK) + " "
+                                + (mObject.has(CONTENT_FORM) ? "" : CONTENT_FORM));
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (JSONException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
@@ -295,6 +320,7 @@ public class MeetingActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(final Boolean success) {
             linkTask = null;
+            Boolean finish = true;
             if (success) {
                 if (mForm != null) {
                     try {
@@ -305,6 +331,7 @@ public class MeetingActivity extends AppCompatActivity {
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_ANSWER);
                             GET_MEETING_ANSWER = "";
+                            finish = false;
                         }
 
                         if (mForm.has(CONTENT_TOPIC_BODY)) {
@@ -314,6 +341,7 @@ public class MeetingActivity extends AppCompatActivity {
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_TOPIC_BODY);
                             GET_TOPIC_BODY = "";
+                            finish = false;
                         }
 
                         if (mForm.has(CONTENT_TOPIC_DOCUMENT)) {
@@ -323,6 +351,7 @@ public class MeetingActivity extends AppCompatActivity {
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_TOPIC_DOCUMENT);
                             GET_TOPIC_DOCUMENT = "";
+                            finish = false;
                         }
 
                         if (mForm.has(CONTENT_POLL)) {
@@ -332,6 +361,7 @@ public class MeetingActivity extends AppCompatActivity {
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_POLL);
                             GET_MEETING_POLL = "";
+                            finish = false;
                         }
 
                         if (mForm.has(CONTENT_QUESTION)) {
@@ -341,6 +371,7 @@ public class MeetingActivity extends AppCompatActivity {
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_QUESTION);
                             GET_MEETING_QUESTION = "";
+                            finish = false;
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -354,6 +385,7 @@ public class MeetingActivity extends AppCompatActivity {
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_START);
                             GET_MEETING_START = "";
+                            finish = false;
                         }
 
                         if (mLink.has(CONTENT_TOPIC))
@@ -361,6 +393,7 @@ public class MeetingActivity extends AppCompatActivity {
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_TOPIC);
                             GET_MEETING_TOPIC = "";
+                            finish = false;
                         }
 
                         if (mLink.has(CONTENT_DOCUMENT))
@@ -368,6 +401,7 @@ public class MeetingActivity extends AppCompatActivity {
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_DOCUMENT);
                             GET_MEETING_DOCUMENT = "";
+                            finish = false;
                         }
 
                         if (mLink.has(CONTENT_MEMBER))
@@ -375,20 +409,39 @@ public class MeetingActivity extends AppCompatActivity {
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_MEMBER);
                             GET_MEETING_MEMBER = "";
+                            finish = false;
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 }
 
-                Log.i("[MA]", "Start cloud listening thread");
-                mListener.fragmentChanged(currentFragment);
+                if (finish) {
+                    mTimes = LINK_SUCCESS;
+                    Toast.makeText(getApplicationContext(), "連結成功", Toast.LENGTH_LONG).show();
+                    mListener.fragmentChanged(adapter.getItem(currentFragment));
 
-                mThread = new Thread(mListener);
-                mThread.start();
+                    mThread = new Thread(mListener);
+                    mThread.start();
+                }
             }
-            else
+            else {
                 Log.i("[MA]", "Fail to fetch meeting update link");
+            }
+
+            if (mTimes < MAX_RETRY_TIMES) {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                linkTask = new LinkCloudTask(mUrl, mTimes + 1);
+                linkTask.execute();
+            }
+            else if (mTimes != LINK_SUCCESS) {
+                Toast.makeText(getApplicationContext(), "連結失敗，請稍後嘗試", Toast.LENGTH_LONG).show();
+            }
         }
     }
 }

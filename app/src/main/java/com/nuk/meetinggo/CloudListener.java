@@ -37,7 +37,9 @@ public class CloudListener implements Runnable {
 
     public Boolean listenTopic = false;
 
-    private int requestsPerSecond = 2;
+    private Boolean fragmentAdded = false;
+
+    private int requestsPerSecond = 1;
 
     private JSONObject newObject, oldObject;
 
@@ -69,6 +71,13 @@ public class CloudListener implements Runnable {
 
             if (listenStop)
                 return;
+
+            if (!fragmentAdded) {
+                Log.i("[CL]", "Waiting activity add fragment " + mFragment.toString());
+                fragmentAdded = mFragment.isAdded();
+                return;
+            }
+
             try {
                 if (!TextUtils.isEmpty(mUrl)) {
                     Log.i("[CL]" + mFragment.toString(), "Request:" + mUrl);
@@ -127,6 +136,8 @@ public class CloudListener implements Runnable {
             mReceiver.setReceiver((PollFragment) mFragment);
         if (mFragment instanceof RecordFragment)
             mReceiver.setReceiver((RecordFragment) mFragment);
+
+        fragmentAdded = mFragment.isAdded();
 
         changeLink();
     }

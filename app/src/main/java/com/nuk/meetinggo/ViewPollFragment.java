@@ -42,8 +42,10 @@ import static com.nuk.meetinggo.DataUtils.NEW_POLL_REQUEST;
 import static com.nuk.meetinggo.DataUtils.OPTION_ARRAY;
 import static com.nuk.meetinggo.DataUtils.OPTION_ID;
 import static com.nuk.meetinggo.DataUtils.POLL_BODY;
+import static com.nuk.meetinggo.DataUtils.POLL_CHECK;
 import static com.nuk.meetinggo.DataUtils.POLL_COLOUR;
 import static com.nuk.meetinggo.DataUtils.POLL_FONT_SIZE;
+import static com.nuk.meetinggo.DataUtils.POLL_ID;
 import static com.nuk.meetinggo.DataUtils.POLL_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.POLL_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.POLL_TITLE;
@@ -66,11 +68,13 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
     // Array of selected positions
     public static ArrayList<Integer> checkedArray = new ArrayList<Integer>();
     public static boolean choseActive = false; // True if chose mode is active, false otherwise
-    public static boolean multiChoseEnable = false; // True if multchose is enable, false otherwise
+    public static boolean multiChoseEnable = false; // True if multiChose is enable, false otherwise
+    public static boolean pollActive = true; // True if poll mode is active, false otherwise
 
     private InputMethodManager imm;
     private Bundle bundle;
     private DetachableResultReceiver receiver;
+    private ActionMode actionMode;
 
     private String[] colourArr; // Colours string array
     private int[] colourArrResId; // colourArr to resource int array
@@ -78,6 +82,7 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
     private String[] fontSizeNameArr; // Font size names string array
 
     // Defaults
+    private String pollID = "0"; // id default
     private String colour = "#FFFFFF"; // white default
     private int fontSize = 18; // Medium default
 
@@ -109,6 +114,10 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
         options = new JSONArray();
 
         //tabLayoutVisibility(false);
+        if (MeetingInfo.topicID == 0)
+            MeetingActivity.tabLayoutVisibility(false);
+        else
+            RemoteActivity.tabLayoutVisibility(false);
     }
 
     @Override
@@ -120,7 +129,7 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
         titleText = (TextView) view.findViewById(R.id.titleText);
         bodyText = (TextView) view.findViewById(R.id.bodyText);
         sendPoll = (ImageButton) view.findViewById(R.id.sendPoll);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         relativeLayoutView = (RelativeLayout) view.findViewById(R.id.relativeLayoutView);
 
         imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
@@ -136,7 +145,8 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
         if (bundle != null) {
             // If current poll is not new -> initialize colour, font, hideBody and Textviews
             if (bundle.getInt(POLL_REQUEST_CODE) != NEW_POLL_REQUEST) {
-                //colour = bundle.getString(POLL_COLOUR);
+                pollID = bundle.getString(POLL_ID);
+                colour = bundle.getString(POLL_COLOUR);
                 fontSize = bundle.getInt(POLL_FONT_SIZE);
 
                 titleText.setText(bundle.getString(POLL_TITLE));
@@ -144,6 +154,11 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
                 bodyText.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
 
                 try {
+                    if (bundle.containsKey(POLL_CHECK))
+                        pollActive = bundle.getBoolean(POLL_CHECK);
+                    else
+                        pollActive = false;
+
                     if (bundle.containsKey(OPTION_ARRAY)) {
                         options = new JSONArray(bundle.getString(OPTION_ARRAY));
                         adapter = new OptionAdapter(getContext(), options);
@@ -386,6 +401,7 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         choseActive = true; // Set choseActive to true as we entered chose mode
         sendPollButtonVisibility(true); // Hide sendPoll button
+        actionMode = mode;
 
         return true;
     }
@@ -396,6 +412,7 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
         checkedArray = new ArrayList<Integer>(); // Reset checkedArray
         choseActive = false; // Set choseActive to true as we entered chose mode
         sendPollButtonVisibility(false); // Hide sendPoll button
+        actionMode = null;
     }
 
     @Override
@@ -510,7 +527,7 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
     public class LinkCloudTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String CONTENT_TOPIC = "topic_id";
-        private final String CONTENT_POLL = "poll_id";
+        private final String CONTENT_POLL = "issue_id";
         private final String CONTENT_OPTION = "option_id";
 
         private int mRequest;
@@ -531,7 +548,7 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
                 // Add new poll to form
                 for(Integer i : checkedArray) {
                     form.put(CONTENT_TOPIC, String.valueOf(MeetingInfo.topicID));
-                    form.put(CONTENT_POLL, "1");
+                    form.put(CONTENT_POLL, pollID);
 
                     try {
                         JSONObject option = options.getJSONObject(i);
@@ -561,6 +578,11 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
                 if (mRequest == SEND_MESSAGE) {
                     // TODO change to display poll result
                     Toast.makeText(getContext(), "Poll success", Toast.LENGTH_LONG).show();
+                    pollActive = false;
+                    adapter.notifyDataSetChanged();
+
+                    if (actionMode != null)
+                        actionMode.finish();
                 }
             }
         }

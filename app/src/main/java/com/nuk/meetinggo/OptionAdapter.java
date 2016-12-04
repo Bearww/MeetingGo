@@ -23,6 +23,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import static com.nuk.meetinggo.DataUtils.OPTION_CONTENT;
+import static com.nuk.meetinggo.DataUtils.OPTION_VOTES;
 import static com.nuk.meetinggo.EditPollFragment.addOption;
 import static com.nuk.meetinggo.EditPollFragment.changeOption;
 import static com.nuk.meetinggo.EditPollFragment.deleteOption;
@@ -30,6 +31,7 @@ import static com.nuk.meetinggo.EditPollFragment.isLastOption;
 import static com.nuk.meetinggo.EditPollFragment.optionChanged;
 import static com.nuk.meetinggo.ViewPollFragment.checkedArray;
 import static com.nuk.meetinggo.PollFragment.editActive;
+import static com.nuk.meetinggo.ViewPollFragment.pollActive;
 
 /**
  * Adapter class for custom options ListView
@@ -88,6 +90,7 @@ public class OptionAdapter extends BaseAdapter implements ListAdapter {
         LayerDrawable roundedCard = (LayerDrawable) context.getResources().getDrawable(R.drawable.rounded_card);
         final EditText bodyText = (EditText) convertView.findViewById(R.id.optionText);
         TextView bodyView = (TextView) convertView.findViewById(R.id.optionView);
+        TextView votesView = (TextView) convertView.findViewById(R.id.votesView);
         ImageButton delete = (ImageButton) convertView.findViewById(R.id.delete);
 
         // Get Option object at position
@@ -98,10 +101,12 @@ public class OptionAdapter extends BaseAdapter implements ListAdapter {
             String body = context.getString(R.string.option_body);
             String colour = "#FFFFFF";
             int fontSize = 18;
+            String votes = "0";
 
             try {
                 // Get optionObject data and store in variables
                 body = optionObject.getString(OPTION_CONTENT);
+                votes = optionObject.getString(OPTION_VOTES);
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -145,6 +150,12 @@ public class OptionAdapter extends BaseAdapter implements ListAdapter {
                 bodyView.setVisibility(View.VISIBLE);
                 bodyView.setText(body);
                 bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
+
+                votesView.setText(votes);
+                if (pollActive)
+                    votesView.setVisibility(View.VISIBLE);
+                else
+                    votesView.setVisibility(View.INVISIBLE);
             }
 
             // If current note is selected for deletion -> highlight

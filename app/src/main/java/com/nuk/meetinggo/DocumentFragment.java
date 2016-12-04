@@ -2,12 +2,16 @@ package com.nuk.meetinggo;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
-import android.os.Message;
+import android.os.PowerManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
@@ -20,6 +24,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.MimeTypeMap;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ImageButton;
@@ -32,23 +37,29 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.Map;
 
+import static com.nuk.meetinggo.DataUtils.APP_FOLDER_NAME;
 import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
-import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
 import static com.nuk.meetinggo.DataUtils.DOCUMENTS_FILE_NAME;
+import static com.nuk.meetinggo.DataUtils.DOCUMENT_DOWNLOADED;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_FAVOURED;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_LINK;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_RECEIVER;
-import static com.nuk.meetinggo.DataUtils.DOCUMENT_REFERENCE;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_TITLE;
+import static com.nuk.meetinggo.DataUtils.DOCUMENT_TOPIC;
+import static com.nuk.meetinggo.DataUtils.DOCUMENT_VIEW;
 import static com.nuk.meetinggo.DataUtils.NEW_DOCUMENT_REQUEST;
 import static com.nuk.meetinggo.DataUtils.deleteDocuments;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
+import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 
 public class DocumentFragment extends Fragment implements AdapterView.OnItemClickListener,
@@ -56,6 +67,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         SearchView.OnQueryTextListener, DetachableResultReceiver.Receiver {
 
     private static File localPath;
+    private static String localDirectory;
 
     // Layout components
     private static ListView listView;
@@ -74,16 +86,20 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
     // For disabling long clicks, favourite clicks and modifying the item click pattern
     public static boolean searchActive = false;
     private ArrayList<Integer> realIndexesOfSearchResults; // To keep track of real indexes in searched documents
+    private static ArrayList<Integer> realIndexesOfFilterResults; // To keep track of real indexes in filtered documents
+    private static JSONArray filteredDocuments; // Filtered documents array
 
     private int lastFirstVisibleItem = -1; // Last first item seen in list view scroll changed
     private float newDocumentButtonBaseYCoordinate; // Base Y coordinate of newDocument button
 
+    // declare the dialog as a member field of your activity
+    ProgressDialog progressDialog;
     private AlertDialog addDocumentDialog;
 
     private DetachableResultReceiver mReceiver;
-    private Handler mHandler;
 
     private LinkCloudTask linkTask;
+    private DownloadFileTask downloadTask;
 
     private static int GET_DOCUMENTS = 60001;
 
@@ -93,6 +109,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
         // Initialize local file path and backup file path
         localPath = new File(getContext().getFilesDir() + "/" + meetingID + DOCUMENTS_FILE_NAME);
+        localDirectory = Environment.getExternalStorageDirectory() + APP_FOLDER_NAME + MeetingInfo.meetingID;
 
         // Init documents array
         documents = new JSONArray();
@@ -104,6 +121,9 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         if (tempDocuments != null)
             documents = tempDocuments;
 
+        // Filter topic id from documents
+        filteredDocuments = filterDocument();
+
         mReceiver = new DetachableResultReceiver(new Handler());
         mReceiver.setReceiver(this);
     }
@@ -114,7 +134,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         newDocument = (ImageButton) view.findViewById(R.id.newDocument);
         noDocuments = (TextView) view.findViewById(R.id.noDocuments);
 
@@ -124,7 +144,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         newDocumentButtonBaseYCoordinate = newDocument.getY();
 
         // Initialize DocumentAdapter with documents array
-        adapter = new DocumentAdapter(getContext(), documents);
+        adapter = new DocumentAdapter(getContext(), filteredDocuments);
         listView.setAdapter(adapter);
 
         // Set item click, multi choice and scroll listeners
@@ -159,7 +179,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         });
 
 
-        // If newDocument button clicked -> Start EditDocumentFragment intent with NEW_DOCUMENT_REQUEST as request
+        // If newDocument button clicked -> Start ViewDocumentFragment intent with NEW_DOCUMENT_REQUEST as request
         newDocument.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -171,24 +191,11 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         newDocument.setVisibility(View.GONE);
 
         // If no documents -> show 'Press + to add new document' text, invisible otherwise
-        if (documents.length() == 0)
+        if (filteredDocuments.length() == 0)
             noDocuments.setVisibility(View.VISIBLE);
 
         else
             noDocuments.setVisibility(View.INVISIBLE);
-
-        // Init handler
-        mHandler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                // If no documents -> show 'Press + to add new document' text, invisible otherwise
-                if (documents.length() == 0)
-                    noDocuments.setVisibility(View.VISIBLE);
-
-                else
-                    noDocuments.setVisibility(View.INVISIBLE);
-            }
-        };
         
         initDialogs(getContext());
 
@@ -235,7 +242,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
                                     // Init realIndexes array
                                     realIndexesOfSearchResults = new ArrayList<Integer>();
-                                    for (int i = 0; i < documents.length(); i++)
+                                    for (int i = 0; i < filteredDocuments.length(); i++)
                                         realIndexesOfSearchResults.add(i);
 
                                     adapter.notifyDataSetChanged();
@@ -268,30 +275,117 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
          */
         LayoutInflater inflater = LayoutInflater.from(context);
         final View view = inflater.inflate(R.layout.dialog_add_poll, null);
+
+        // Instantiate progress dialog
+        progressDialog = new ProgressDialog(context);
+        progressDialog.setMessage("A message");
+        progressDialog.setIndeterminate(true);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setCancelable(true);
+
+        progressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                if (downloadTask != null)
+                    downloadTask.cancel(true);
+            }
+        });
     }
 
     /**
-     * If item clicked in list view -> Start EditDocumentFragment intent with position as requestCode
+     * Implementation of filter document
+     */
+    protected static JSONArray filterDocument() {
+        
+        JSONArray documentsFiltered = new JSONArray();
+        realIndexesOfFilterResults = new ArrayList<>();
+        
+        if (MeetingInfo.topicID != 0) {
+            // Loop through main documents list
+            for (int i = 0; i < documents.length(); i++) {
+                JSONObject document = null;
+
+                // Get document at position i
+                try {
+                    document = documents.getJSONObject(i);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                // If document not null and title/body contain query text
+                // -> Put in new documents array and add i to realIndexes array
+                if (document != null) {
+                    try {
+                        if (document.getString(DOCUMENT_TOPIC).equals(String.valueOf(MeetingInfo.topicID))) {
+
+                            documentsFiltered.put(document);
+                            realIndexesOfFilterResults.add(i);
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        else {
+            for (int i = 0; i < documents.length(); i++) {
+                try {
+                    documentsFiltered.put(documents.getJSONObject(i));
+                    realIndexesOfFilterResults.add(i);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return documentsFiltered;
+    }
+
+    /**
+     * If item clicked in list view -> Start ViewDocumentFragment intent with position as requestCode
      */
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+        Boolean isViewable = false;
+        
         // Create fragment and give it an argument
         ViewDocumentFragment nextFragment = new ViewDocumentFragment();
         Bundle args = new Bundle();
         args.putInt(DOCUMENT_REQUEST_CODE, NEW_DOCUMENT_REQUEST);
         args.putParcelable(DOCUMENT_RECEIVER, mReceiver);
-        Log.i("[MF]", "Put receiver " + mReceiver.toString());
+        Log.i("[DF]", "Put receiver " + mReceiver.toString());
 
-        // If search is active -> use position from realIndexesOfSearchResults for EditDocumentFragment
+        // If search is active -> use position from realIndexesOfSearchResults for ViewDocumentFragment
         if (searchActive) {
             int newPosition = realIndexesOfSearchResults.get(position);
 
             try {
-                // Package selected document content and send to EditDocumentFragment
-                args.putString(DOCUMENT_TITLE, documents.getJSONObject(newPosition).getString(DOCUMENT_TITLE));
-                args.putString(DOCUMENT_LINK, documents.getJSONObject(newPosition).getString(DOCUMENT_LINK));
-                args.putString(DOCUMENT_REFERENCE, documents.getJSONObject(newPosition).getString(DOCUMENT_REFERENCE));
+                if (documents.getJSONObject(position).getString(DOCUMENT_LINK).contains(("back_end"))) {
+                    if (documents.getJSONObject(newPosition).getBoolean(DOCUMENT_DOWNLOADED))
+                        openFile(localDirectory, documents.getJSONObject(newPosition).getString(DOCUMENT_TITLE));
 
+                    else {
+                        if (downloadTask == null) {
+                            downloadTask = new DownloadFileTask(documents.getJSONObject(newPosition).getString(DOCUMENT_LINK),
+                                    documents.getJSONObject(newPosition).getString(DOCUMENT_LINK));
+                            downloadTask.execute();
+                        }
+                    }
+                }
+                else if (documents.getJSONObject(position).getString(DOCUMENT_LINK).contains(("drive"))) {
+                    // Package selected document content and send to ViewDocumentFragment
+                    args.putString(DOCUMENT_TITLE, documents.getJSONObject(newPosition).getString(DOCUMENT_TITLE));
+                    args.putString(DOCUMENT_VIEW, documents.getJSONObject(newPosition).getString(DOCUMENT_VIEW));
+                    args.putString(DOCUMENT_TOPIC, documents.getJSONObject(newPosition).getString(DOCUMENT_TOPIC));
+                    isViewable = true;
+                }
+                else {
+                    Toast.makeText(getContext(), "Document link error", Toast.LENGTH_LONG).show();
+                    return;
+                }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -299,14 +393,32 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
             args.putInt(DOCUMENT_REQUEST_CODE, newPosition);
         }
 
-        // If search is not active -> use normal position for EditDocumentFragment
+        // If search is not active -> use normal position for ViewDocumentFragment
         else {
             try {
-                // Package selected document content and send to EditDocumentFragment
-                args.putString(DOCUMENT_TITLE, documents.getJSONObject(position).getString(DOCUMENT_TITLE));
-                args.putString(DOCUMENT_LINK, documents.getJSONObject(position).getString(DOCUMENT_LINK));
-                args.putString(DOCUMENT_REFERENCE, documents.getJSONObject(position).getString(DOCUMENT_REFERENCE));
+                if (documents.getJSONObject(position).getString(DOCUMENT_LINK).contains(("back_end"))) {
+                    if (documents.getJSONObject(position).getBoolean(DOCUMENT_DOWNLOADED))
+                        openFile(localDirectory, documents.getJSONObject(position).getString(DOCUMENT_TITLE));
 
+                    else {
+                        if (downloadTask == null) {
+                            downloadTask = new DownloadFileTask(documents.getJSONObject(position).getString(DOCUMENT_TITLE),
+                                    documents.getJSONObject(position).getString(DOCUMENT_LINK));
+                            downloadTask.execute();
+                        }
+                    }
+                }
+                else if (documents.getJSONObject(position).getString(DOCUMENT_LINK).contains(("drive"))) {
+                    // Package selected document content and send to ViewDocumentFragment
+                    args.putString(DOCUMENT_TITLE, documents.getJSONObject(position).getString(DOCUMENT_TITLE));
+                    args.putString(DOCUMENT_VIEW, documents.getJSONObject(position).getString(DOCUMENT_VIEW));
+                    args.putString(DOCUMENT_TOPIC, documents.getJSONObject(position).getString(DOCUMENT_TOPIC));
+                    isViewable = true;
+                }
+                else {
+                    Toast.makeText(getContext(), "Document link error", Toast.LENGTH_LONG).show();
+                    return;
+                }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -314,17 +426,19 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
             args.putInt(DOCUMENT_REQUEST_CODE, position);
         }
 
-        nextFragment.setArguments(args);
+        if (isViewable) {
+            nextFragment.setArguments(args);
 
-        FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
+            FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
 
-        // Replace whatever is in the fragment_container view with this fragment,
-        // and add the transaction to the back stack so the user can navigate back
-        transaction.replace(R.id.layout_container, nextFragment);
-        transaction.addToBackStack(null);
+            // Replace whatever is in the fragment_container view with this fragment,
+            // and add the transaction to the back stack so the user can navigate back
+            transaction.replace(R.id.layout_container, nextFragment);
+            transaction.addToBackStack(null);
 
-        // Commit the transaction
-        transaction.commit();
+            // Commit the transaction
+            transaction.commit();
+        }
     }
 
     /**
@@ -346,6 +460,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
      */
     @Override
     public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+        
         // If item checked -> add to array
         if (checked)
             checkedArray.add(position);
@@ -390,7 +505,8 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                             documents = deleteDocuments(documents, checkedArray);
 
                             // Create and set new adapter with new documents array
-                            adapter = new DocumentAdapter(getContext(), documents);
+                            filteredDocuments = filterDocument();
+                            adapter = new DocumentAdapter(getContext(), filteredDocuments);
                             listView.setAdapter(adapter);
 
                             // Attempt to save documents to local file
@@ -412,7 +528,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                             });
 
                             // If no documents -> show 'Press + to add new document' text, invisible otherwise
-                            if (documents.length() == 0)
+                            if (filteredDocuments.length() == 0)
                                 noDocuments.setVisibility(View.VISIBLE);
 
                             else
@@ -491,7 +607,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
             realIndexesOfSearchResults = new ArrayList<Integer>();
 
             // Loop through main documents list
-            for (int i = 0; i < documents.length(); i++) {
+            for (int i = 0; i < filteredDocuments.length(); i++) {
                 JSONObject document = null;
 
                 // Get document at position i
@@ -507,7 +623,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                 if (document != null) {
                     try {
                         if (document.getString(DOCUMENT_TITLE).toLowerCase().contains(s) ||
-                                document.getString(DOCUMENT_REFERENCE).toLowerCase().contains(s)) {
+                                document.getString(DOCUMENT_TOPIC).toLowerCase().contains(s)) {
 
                             documentsFound.put(document);
                             realIndexesOfSearchResults.add(i);
@@ -527,10 +643,10 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         // If query text length is 0 -> re-init realIndexes array (0 to length) and reset adapter
         else {
             realIndexesOfSearchResults = new ArrayList<Integer>();
-            for (int i = 0; i < documents.length(); i++)
+            for (int i = 0; i < filteredDocuments.length(); i++)
                 realIndexesOfSearchResults.add(i);
 
-            adapter = new DocumentAdapter(getContext(), documents);
+            adapter = new DocumentAdapter(getContext(), filteredDocuments);
             listView.setAdapter(adapter);
         }
 
@@ -549,10 +665,27 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
      */
     protected void searchEnded() {
         searchActive = false;
-        adapter = new DocumentAdapter(getContext(), documents);
+        adapter = new DocumentAdapter(getContext(), filteredDocuments);
         listView.setAdapter(adapter);
         listView.setLongClickable(true);
         newDocumentButtonVisibility(true);
+    }
+
+    protected void openFile(String fileDirectory, String fileName) {
+        File file = new File(fileDirectory, fileName);
+        MimeTypeMap map = MimeTypeMap.getSingleton();
+        String ext = MimeTypeMap.getFileExtensionFromUrl(file.getName());
+        String type = map.getMimeTypeFromExtension(ext);
+
+        if (type == null)
+            type = "*/*";
+
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        Uri data = Uri.fromFile(file);
+
+        intent.setDataAndType(data, type);
+
+        startActivity(intent);
     }
 
     /**
@@ -562,11 +695,12 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
      * @param position position of document
      */
     public static void setFavourite(Context context, boolean favourite, int position) {
+
         JSONObject newFavourite = null;
 
         // Get document at position and store in newFavourite
         try {
-            newFavourite = documents.getJSONObject(position);
+            newFavourite = filteredDocuments.getJSONObject(position);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -596,7 +730,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
                     // Copy contents to new sorted array without favoured element
                     for (int i = 0; i < documents.length(); i++) {
-                        if (i != position) {
+                        if (i != realIndexesOfFilterResults.get(position)) {
                             try {
                                 newArray.put(documents.get(i));
 
@@ -608,7 +742,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
                     // Equal main documents array with new sorted array and reset adapter
                     documents = newArray;
-                    adapter = new DocumentAdapter(context, documents);
+                    adapter = new DocumentAdapter(context, filteredDocuments = filterDocument());
                     listView.setAdapter(adapter);
 
                     // Smooth scroll to top
@@ -622,7 +756,8 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                 // If favoured document was first -> just update object in documents array and notify adapter
                 else {
                     try {
-                        documents.put(position, newFavourite);
+                        documents.put(realIndexesOfFilterResults.get(position), newFavourite);
+                        filteredDocuments.put(position, newFavourite);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -636,7 +771,8 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
             else {
                 try {
                     newFavourite.put(DOCUMENT_FAVOURED, false);
-                    documents.put(position, newFavourite);
+                    documents.put(realIndexesOfFilterResults.get(position), newFavourite);
+                    filteredDocuments.put(position, newFavourite);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -651,10 +787,10 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
     }
 
     /**
-     * Callback method when EditDocumentFragment finished adding new document or editing existing document
+     * Callback method when ViewDocumentFragment finished adding new document or editing existing document
      * @param requestCode requestCode for intent sent, in our case either NEW_DOCUMENT_REQUEST or position
      * @param resultCode resultCode from activity, either RESULT_OK or RESULT_CANCELED
-     * @param resultData Data bundle passed back from EditDocumentFragment
+     * @param resultData Data bundle passed back from ViewDocumentFragment
      */
     @Override
     public void onReceiveResult(int requestCode, int resultCode, Bundle resultData) {
@@ -662,6 +798,12 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
             // If search was active -> call 'searchEnded' method
             if (searchActive && searchMenu != null)
                 searchMenu.collapseActionView();
+
+            if (resultData != null) {
+                Log.i("[DF]", "do something");
+                linkTask = new LinkCloudTask(requestCode, resultCode, resultData);
+                linkTask.execute((Void) null);
+            }
         }
     }
 
@@ -688,6 +830,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         private final String CONTENT_OBJECT = "obj_doc_list";
         private final String CONTENT_TITLE = "remark_name";
         private final String CONTENT_LINK = "download";
+        private final String CONTENT_VIEW = "open_doc";
 
         LinkCloudTask(int request, int result, Bundle data) {
             requestCode = request;
@@ -697,7 +840,6 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
         @Override
         protected Boolean doInBackground(Void... params) {
-
             // Cloud documents
             if (requestCode == CLOUD_UPDATE) {
                 JSONObject request = null;
@@ -713,6 +855,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
                         JSONArray title = null;
                         JSONArray link = null;
+                        JSONArray view = null;
                         if (object.has(CONTENT_TITLE))
                             title = object.getJSONArray(CONTENT_TITLE);
                         else
@@ -723,7 +866,12 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                         else
                             Log.i("[DF]", "Fail to fetch field " + CONTENT_LINK);
 
-                        if (title != null && link != null) {
+                        if (object.has(CONTENT_VIEW))
+                            view = object.getJSONArray(CONTENT_VIEW);
+                        else
+                            Log.i("[DF]", "Fail to fetch field " + CONTENT_VIEW);
+
+                        if (title != null && link != null && view != null) {
                             if (title.length() == link.length()) {
                                 // Update documents, check document id is either existed or not
                                 // Yes -> update data, no -> add new document
@@ -745,10 +893,13 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                                         // Add new document
                                         document.put(DOCUMENT_TITLE, title.getString(i));
                                         document.put(DOCUMENT_LINK, link.getString(i));
-                                        document.put(DOCUMENT_REFERENCE, "");
+                                        document.put(DOCUMENT_VIEW, view.getString(i));
+                                        document.put(DOCUMENT_DOWNLOADED, false);
+                                        document.put(DOCUMENT_TOPIC, "0");
                                         document.put(DOCUMENT_FAVOURED, false);
 
                                         documents.put(document);
+                                        filteredDocuments.put(document);
                                     }
                                     // Update existed document
                                     else {
@@ -757,6 +908,13 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                                         document.put(DOCUMENT_LINK, link.getString(i));
 
                                         documents.put(position, document);
+
+                                        for (int j = 0; j < filteredDocuments.length(); j++) {
+                                            if (position == realIndexesOfFilterResults.get(j)) {
+                                                filteredDocuments.put(realIndexesOfFilterResults.get(j), document);
+                                                break;
+                                            }
+                                        }
                                     }
                                 }
 
@@ -774,22 +932,6 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-            }
-            else if (requestCode == GET_DOCUMENTS) {
-                try {
-                    JSONObject object = LinkCloud.request(URL_DOCUMENTS);
-                    Map<String, String> links = LinkCloud.getLink(object);
-
-                    for (String key : links.keySet())
-                        Log.i("[DF]", key + " " + links.get(key));
-
-                    // TODO i don't know how to get
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                return true;
             }
 
             return false;
@@ -814,7 +956,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                     }
 
                     // If no documents -> show 'Press + to add new document text, invisible otherwise
-                    if(documents.length() == 0)
+                    if(filteredDocuments.length() == 0)
                         noDocuments.setVisibility(View.VISIBLE);
                     else
                         noDocuments.setVisibility(View.INVISIBLE);
@@ -825,6 +967,165 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         @Override
         protected void onCancelled() {
             linkTask = null;
+        }
+    }
+
+    public class DownloadFileTask extends AsyncTask<Void, Void, Boolean> {
+        
+        String mFileName = "";
+        String mUrl = "";
+        String mFileDirectory = "";
+
+        PowerManager.WakeLock mWakeLock;
+
+        DownloadFileTask(String fileName, String url) {
+            mFileName = fileName;
+            mUrl = LinkCloud.BASIC_WEB_LINK + url;
+            mFileDirectory = localDirectory;
+        }
+        
+        @Override
+        protected Boolean doInBackground(Void... params) {
+
+            FileOutputStream output = null;
+            InputStream input = null;
+            HttpURLConnection connection = null;
+
+            try {
+                byte[] buff;
+
+                long totalSize = 0;
+                File toDirectory = new File(mFileDirectory);
+
+                if (!toDirectory.exists()) {
+                    Boolean created = toDirectory.mkdirs();
+
+                    // If file failed to create -> return false
+                    if (!created)
+                        return false;
+                }
+
+                File toFile = new File(toDirectory, mFileName);
+
+                if (!toFile.exists()) {
+                    Boolean created = toFile.createNewFile();
+
+                    // If file failed to create -> return false
+                    if (!created)
+                        return false;
+                }
+                Log.i("[DF]", "File " + toFile.toString());
+
+                connection = (HttpURLConnection) (new URL(mUrl)).openConnection();
+                connection.connect();
+
+                // expect HTTP 200 OK, so we don't mistakenly save error report
+                // instead of the file
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    Log.i("[DF]", "Server returned HTTP " + connection.getResponseCode()
+                            + " " + connection.getResponseMessage());
+                    return false;
+                }
+
+                if (connection.getContentLength() > 0) {
+                    input = connection.getInputStream();
+                    output = new FileOutputStream(toFile);
+                    totalSize = connection.getContentLength();
+                    Log.i("[DF]", "Size " + totalSize);
+
+                    long total = 0;
+                    buff = new byte[4096];
+                    int bufferLength = 0;
+                    while ((bufferLength = input.read(buff)) > 0) {
+                        // allow canceling with back button
+                        if (isCancelled()) {
+                            input.close();
+                            return false;
+                        }
+                        // Publishing the progress....
+                        total += bufferLength;
+                        publishProgress((int) ((total * 100) / totalSize));
+                        output.write(buff, 0, bufferLength);
+                    }
+
+                    // Modify current download state, if true -> downloaded, false otherwise
+                    for (int i = 0; i < documents.length(); i++) {
+                        if (documents.getJSONObject(i).getString(DOCUMENT_TITLE).equals(mFileName)) {
+                            JSONObject document = documents.getJSONObject(i);
+
+                            document.put(DOCUMENT_DOWNLOADED, true);
+
+                            documents.put(i, document);
+                            return true;
+                        }
+                    }
+                } else
+                    Log.w(mFileName, "File not find");
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e("[DF]", e.toString());
+            } finally {
+                try {
+                    if (output != null)
+                        output.close();
+                    if (input != null)
+                        input.close();
+                } catch (IOException ignored) {
+                }
+
+                if (connection != null)
+                    connection.disconnect();
+            }
+            return false;
+        }
+
+        private void publishProgress(Integer... progress) {
+            // if we get here, length is known, now set indeterminate to false
+            progressDialog.setIndeterminate(false);
+            progressDialog.setMax(100);
+            progressDialog.setProgress(progress[0]);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // Take CPU lock to prevent CPU from going off if the user
+            // presses the power button during download
+            PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                    getClass().getName());
+            mWakeLock.acquire();
+            progressDialog.show();
+        }
+
+        protected void onPostExecute(Boolean success) {
+            downloadTask = null;
+            mWakeLock.release();
+            progressDialog.dismiss();
+            
+            if (success) {
+                Log.i("[DF]", "Downloaded " + mFileName);
+                progressDialog.dismiss();
+
+                adapter.notifyDataSetChanged();
+
+                Boolean saveSuccessful = saveData(localPath, documents);
+
+                if (saveSuccessful) {
+                    Toast toast = Toast.makeText(getContext(),
+                            getResources().getString(R.string.toast_new_document),
+                            Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+                openFile(mFileDirectory, mFileName);
+            }
+            else
+                Log.d("[DF]", "Fail to download " + mFileName);
+        }
+
+        @Override
+        protected void onCancelled() {
+            downloadTask = null;
         }
     }
 }

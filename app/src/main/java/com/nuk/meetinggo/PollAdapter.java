@@ -26,6 +26,7 @@ import org.json.JSONObject;
 
 import static com.nuk.meetinggo.DataUtils.OPTION_ARRAY;
 import static com.nuk.meetinggo.DataUtils.POLL_BODY;
+import static com.nuk.meetinggo.DataUtils.POLL_CHECK;
 import static com.nuk.meetinggo.DataUtils.POLL_COLOUR;
 import static com.nuk.meetinggo.DataUtils.POLL_ENABLED;
 import static com.nuk.meetinggo.DataUtils.POLL_FAVOURED;
@@ -122,6 +123,7 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
             Boolean hideBody = false;
             Boolean favoured = false;
             Boolean enabled = false;
+            Boolean checked = false;
 
             try {
                 controlled = getControllable(MemberInfo.memberID);
@@ -142,6 +144,8 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
                 if (pollObject.has(POLL_ENABLED))
                     enabled = pollObject.getBoolean(POLL_ENABLED);
 
+                checked = pollObject.getBoolean(POLL_CHECK);
+
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -156,29 +160,29 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
             // Set check image resource
             if (getControllable(MemberInfo.memberID)) {
                 edit.setVisibility(View.VISIBLE);
-                pollSwitch.setVisibility(View.VISIBLE);
+                //pollSwitch.setVisibility(View.VISIBLE);
             }
             else {
                 edit.setVisibility(View.INVISIBLE);
-                pollSwitch.setVisibility(View.VISIBLE);
+                //pollSwitch.setVisibility(View.VISIBLE);
             }
 
             // If search or delete modes are active -> hide favourite button; Show otherwise
             if (searchActive || deleteActive) {
                 favourite.setVisibility(View.INVISIBLE);
-                if(controlled) pollSwitch.setVisibility(View.INVISIBLE);
+                //if(controlled) pollSwitch.setVisibility(View.INVISIBLE);
             }
             else {
                 favourite.setVisibility(View.VISIBLE);
-                if(controlled) pollSwitch.setVisibility(View.VISIBLE);
+                //if(controlled) pollSwitch.setVisibility(View.VISIBLE);
             }
 
             // If presenter modes are active -> show poll switch; Hide otherwise
-            if (controlled) {
-                pollSwitch.setChecked(enabled);
-                pollSwitch.setVisibility(View.VISIBLE);
-            }
-            else
+            //if (controlled) {
+            //    pollSwitch.setChecked(enabled);
+            //    pollSwitch.setVisibility(View.VISIBLE);
+            //}
+            //else
                 pollSwitch.setVisibility(View.GONE);
 
             titleView.setText(title);
@@ -198,6 +202,12 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
             if (checkedArray.contains(position)) {
                 ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
                         .setColor(context.getResources().getColor(R.color.theme_primary));
+            }
+
+            // If current poll is voted
+            else if (checked) {
+                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                        .setColor(context.getResources().getColor(R.color.green));
             }
 
             // If current poll is not selected -> set background colour to normal

@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,9 +18,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.nuk.meetinggo.DataUtils.DOCUMENT_DOWNLOADED;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_FAVOURED;
-import static com.nuk.meetinggo.DataUtils.DOCUMENT_REFERENCE;
 import static com.nuk.meetinggo.DataUtils.DOCUMENT_TITLE;
+import static com.nuk.meetinggo.DataUtils.DOCUMENT_VIEW;
 import static com.nuk.meetinggo.DocumentFragment.checkedArray;
 import static com.nuk.meetinggo.DocumentFragment.deleteActive;
 import static com.nuk.meetinggo.DocumentFragment.searchActive;
@@ -85,6 +85,7 @@ public class DocumentAdapter extends BaseAdapter implements ListAdapter {
         TextView titleView = (TextView) convertView.findViewById(R.id.titleView);
         TextView bodyView = (TextView) convertView.findViewById(R.id.bodyView);
         ImageButton favourite = (ImageButton) convertView.findViewById(R.id.favourite);
+        ImageButton download = (ImageButton) convertView.findViewById(R.id.download);
 
         // Get Document object at position
         JSONObject documentObject = getItem(position);
@@ -96,16 +97,18 @@ public class DocumentAdapter extends BaseAdapter implements ListAdapter {
             // If documentObject not empty -> initialize variables
             String title = context.getString(R.string.document_title);
             String reference = context.getString(R.string.document_reference);
-            String colour = String.valueOf(context.getResources().getColor(R.color.white));
+            String colour = "#FFFFFF";
             int fontSize = 18;
             Boolean hideBody = false;
             Boolean favoured = false;
+            Boolean downloaded = false;
 
             try {
                 // Get documentObject data and store in variables
                 title = documentObject.getString(DOCUMENT_TITLE);
-                reference = documentObject.getString(DOCUMENT_REFERENCE);
                 favoured = documentObject.getBoolean(DOCUMENT_FAVOURED);
+                downloaded = documentObject.getBoolean(DOCUMENT_DOWNLOADED) ||
+                    documentObject.getString(DOCUMENT_VIEW).contains("drive");
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -118,6 +121,13 @@ public class DocumentAdapter extends BaseAdapter implements ListAdapter {
             else
                 favourite.setImageResource(R.mipmap.ic_unfav);
 
+            // Set download image resource
+            if (downloaded)
+                download.setImageResource(R.drawable.ic_cloud_done_black_24dp);
+
+            else
+                download.setImageResource(R.drawable.ic_cloud_download_black_24dp);
+
             // If search or delete modes are active -> hide favourite button; Show otherwise
             if (searchActive || deleteActive) {
                 favourite.setVisibility(View.INVISIBLE);
@@ -128,9 +138,9 @@ public class DocumentAdapter extends BaseAdapter implements ListAdapter {
 
             titleView.setText(title);
 
-            bodyView.setVisibility(View.VISIBLE);
-            bodyView.setText(reference);
-            bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
+            //bodyView.setVisibility(View.VISIBLE);
+            //bodyView.setText(reference);
+            //bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
 
             // If current document is selected for deletion -> highlight
             if (checkedArray.contains(position)) {

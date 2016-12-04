@@ -4,12 +4,14 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
@@ -90,11 +92,19 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
     private AlertDialog backupCheckDialog, backupOKDialog, restoreCheckDialog, restoreFailedDialog;
 
-    private DetachableResultReceiver mReceiver;
+    private static FragmentManager mManager;
+    private static DetachableResultReceiver mReceiver;
+    private ActivityCommunicator mCommunicator;
 
     private String addNoteLink = "back_end/meeting/set_info/set_meeting_topic.php?meeting_id=" + meetingID;
 
     private LinkCloudTask linkTask;
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        mCommunicator = (ActivityCommunicator) context;
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -130,6 +140,8 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         if (tempNotes != null)
             notes = tempNotes;
 
+        mManager = getFragmentManager();
+
         mReceiver = new DetachableResultReceiver(new Handler());
         mReceiver.setReceiver(this);
     }
@@ -140,7 +152,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = (ListView) view.findViewById(R.id.beginList);
         newNote = (ImageButton) view.findViewById(R.id.newNote);
         noNotes = (TextView) view.findViewById(R.id.noNotes);
 
@@ -155,7 +167,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         newNoteButtonBaseYCoordinate = newNote.getY();
 
         // Initialize NoteAdapter with notes array
-        adapter = new NoteAdapter(getContext(), notes);
+        adapter = new NoteAdapter(getContext(), notes, mManager, mReceiver);
         listView.setAdapter(adapter);
 
         // Set item click, multi choice and scroll listeners
@@ -380,7 +392,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                             if (restoreSuccessful) {
                                 notes = tempNotes;
 
-                                adapter = new NoteAdapter(getContext(), notes);
+                                adapter = new NoteAdapter(getContext(), notes, mManager, mReceiver);
                                 listView.setAdapter(adapter);
 
                                 Toast toast = Toast.makeText(getContext(),
@@ -506,17 +518,8 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
             startActivityForResult(intent, position);
         }
 */
-        // Get control
-        Boolean controllable = getControllable(MemberInfo.memberID);
-
-        // Create fragment and give it an argument
-        EditNoteFragment editFragment = null;
-        ViewNoteFragment viewFragment = null;
-
-        if(controllable)
-            editFragment = new EditNoteFragment();
-        else
-            viewFragment = new ViewNoteFragment();
+        // Create activity and give it an argument
+        Intent intent = new Intent(getActivity(), RemoteActivity.class);
 
         Bundle args = new Bundle();
         args.putParcelable(NOTE_RECEIVER, mReceiver);
@@ -532,7 +535,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 args.putString(NOTE_BODY, notes.getJSONObject(newPosition).getString(NOTE_BODY));
                 args.putString(NOTE_COLOUR, notes.getJSONObject(newPosition).getString(NOTE_COLOUR));
                 args.putInt(NOTE_FONT_SIZE, notes.getJSONObject(newPosition).getInt(NOTE_FONT_SIZE));
-                args.putString(NOTE_ID, notes.getJSONObject(newPosition).getString(NOTE_ID));
+                args.putInt(NOTE_ID, notes.getJSONObject(newPosition).getInt(NOTE_ID));
 
                 if (notes.getJSONObject(newPosition).has(NOTE_HIDE_BODY)) {
                     args.putBoolean(NOTE_HIDE_BODY,
@@ -557,7 +560,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 args.putString(NOTE_BODY, notes.getJSONObject(position).getString(NOTE_BODY));
                 args.putString(NOTE_COLOUR, notes.getJSONObject(position).getString(NOTE_COLOUR));
                 args.putInt(NOTE_FONT_SIZE, notes.getJSONObject(position).getInt(NOTE_FONT_SIZE));
-                args.putString(NOTE_ID, notes.getJSONObject(position).getString(NOTE_ID));
+                args.putInt(NOTE_ID, notes.getJSONObject(position).getInt(NOTE_ID));
 
                 if (notes.getJSONObject(position).has(NOTE_HIDE_BODY)) {
                     args.putBoolean(NOTE_HIDE_BODY,
@@ -574,20 +577,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
             args.putInt(NOTE_REQUEST_CODE, position);
         }
 
-        if (controllable)
-            editFragment.setArguments(args);
-        else
-            viewFragment.setArguments(args);
-
-        FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
-
-        // Replace whatever is in the fragment_container view with this fragment,
-        // and add the transaction to the back stack so the user can navigate back
-        transaction.replace(R.id.layout_container, controllable ? editFragment : viewFragment);
-        transaction.addToBackStack(null);
-
-        // Commit the transaction
-        transaction.commit();
+        mCommunicator.passDataToActivity(args);
     }
 
     /**
@@ -702,7 +692,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                             notes = deleteNotes(notes, checkedArray);
 
                             // Create and set new adapter with new notes array
-                            adapter = new NoteAdapter(getContext(), notes);
+                            adapter = new NoteAdapter(getContext(), notes, mManager, mReceiver);
                             listView.setAdapter(adapter);
 
                             // Attempt to save notes to local file
@@ -820,7 +810,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 if (note != null) {
                     try {
                         if (note.getString(NOTE_TITLE).toLowerCase().contains(s) ||
-                            note.getString(NOTE_BODY).toLowerCase().contains(s)) {
+                                note.getString(NOTE_BODY).toLowerCase().contains(s)) {
 
                             notesFound.put(note);
                             realIndexesOfSearchResults.add(i);
@@ -833,7 +823,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
             }
 
             // Create and set adapter with notesFound to refresh ListView
-            NoteAdapter searchAdapter = new NoteAdapter(getContext(), notesFound);
+            NoteAdapter searchAdapter = new NoteAdapter(getContext(), notesFound, mManager, mReceiver);
             listView.setAdapter(searchAdapter);
         }
 
@@ -843,7 +833,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
             for (int i = 0; i < notes.length(); i++)
                 realIndexesOfSearchResults.add(i);
 
-            adapter = new NoteAdapter(getContext(), notes);
+            adapter = new NoteAdapter(getContext(), notes, mManager, mReceiver);
             listView.setAdapter(adapter);
         }
 
@@ -863,7 +853,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
      */
     protected void searchEnded() {
         searchActive = false;
-        adapter = new NoteAdapter(getContext(), notes);
+        adapter = new NoteAdapter(getContext(), notes, mManager, mReceiver);
         listView.setAdapter(adapter);
         listView.setLongClickable(true);
         newNoteButtonVisibility(true);
@@ -922,7 +912,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
                     // Equal main notes array with new sorted array and reset adapter
                     notes = newArray;
-                    adapter = new NoteAdapter(context, notes);
+                    adapter = new NoteAdapter(context, notes, mManager, mReceiver);
                     listView.setAdapter(adapter);
 
                     // Smooth scroll to top
@@ -979,7 +969,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 note = notes.getJSONObject(i);
 
                 if (note != null) {
-                    if (note.getString(NOTE_ID).equals(String.valueOf(id)))
+                    if (note.getInt(NOTE_ID) == id)
                         return note.getString(NOTE_TITLE);
                 }
             } catch (JSONException e) {
@@ -1149,7 +1139,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                                     int position = -1;
                                     for(int j = 0; j < notes.length(); j++) {
                                         if(notes.getJSONObject(j).has(NOTE_ID)
-                                                && id.getString(i).equals(notes.getJSONObject(j).getString(NOTE_ID))) {
+                                                && id.getInt(i) == notes.getJSONObject(j).getInt(NOTE_ID)) {
                                             position = j;
                                             break;
                                         }
