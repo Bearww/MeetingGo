@@ -230,7 +230,7 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
             menuEnableControl = menu.findItem(R.id.action_control);
 
             // TODO not work
-            if(getControllable(MemberInfo.memberID))
+            if(getControllable(MemberInfo.memberName))
                 menuEnableControl.setVisible(true);
             else
                 menuEnableControl.setVisible(false);

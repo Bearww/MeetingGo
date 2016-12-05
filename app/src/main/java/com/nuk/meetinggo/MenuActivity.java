@@ -2,9 +2,7 @@ package com.nuk.meetinggo;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -13,7 +11,6 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -25,18 +22,27 @@ import java.util.Map;
 public class MenuActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    Thread mThread;
+
     LinkCloudTask linkTask;
 
     private Map<String, String> meetingInfo = new HashMap<>();
 
-    public static String LINK_CREATE_MEETING = "1";
-    public static String LINK_FUTURE_MEETING = "2";
-    public static String LINK_RECORD = "3";
-    public static String LINK_MEETING = "4";
+    public static Boolean isStop = false;
 
-    private final static String CONTENT_FUTURE = "2";
-    private final static String CONTENT_RECORD = "3";
-    private final static String CONTENT_MEETING = "4";
+    MenuFragment menuFragment = new MenuFragment();
+    MenuListFragment menuListFragment = new MenuListFragment();
+    MenuSettingFragment menuSettingFragment = new MenuSettingFragment();
+
+    public static String LINK_DATA;
+    public static String LINK_CREATE_MEETING;
+    public static String LINK_BEGIN_MEETING;
+    public static String LINK_OLD_MEETING;
+    public static String LINK_FUTURE_MEETING;
+
+    private final static String CONTENT_BEGIN = "2";
+    private final static String CONTENT_OLD = "3";
+    private final static String CONTENT_FUTURE = "4";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,15 +59,6 @@ public class MenuActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -77,9 +74,9 @@ public class MenuActivity extends AppCompatActivity
                 Boolean connectCloud = bundle.getBoolean(Constants.TAG_CONNECTION);
 
                 if(connectCloud) {
-                    String connectData = bundle.getString(Constants.TAG_LINK_DATA);
+                    LINK_DATA = bundle.getString(Constants.TAG_LINK_DATA);
                     Log.i("[MA]", "Loading cloud data");
-                    JSONObject content = LinkCloud.getJSON(connectData);
+                    JSONObject content = LinkCloud.getJSON(LINK_DATA);
                     meetingInfo = LinkCloud.getLink(content);
                 }
 
@@ -88,11 +85,11 @@ public class MenuActivity extends AppCompatActivity
                     Log.i("[MA]map", key + " " + meetingInfo.get(key));
                 }
 
+                LINK_BEGIN_MEETING = meetingInfo.get(CONTENT_BEGIN);
+                LINK_OLD_MEETING = meetingInfo.get(CONTENT_OLD);
                 LINK_FUTURE_MEETING = meetingInfo.get(CONTENT_FUTURE);
-                LINK_RECORD = meetingInfo.get(CONTENT_RECORD);
-                LINK_MEETING = meetingInfo.get(CONTENT_MEETING);
 
-                linkTask = new LinkCloudTask(LINK_RECORD);
+                linkTask = new LinkCloudTask(LINK_OLD_MEETING);
                 linkTask.execute();
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -102,6 +99,18 @@ public class MenuActivity extends AppCompatActivity
             // TODO read from local json/sql
             Log.i("[MA]", "No cloud data");
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isStop = false;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        isStop = true;
     }
 
     @Override
@@ -143,22 +152,19 @@ public class MenuActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_meeting_join) {
-            MenuFragment fragment = new MenuFragment();
             android.support.v4.app.FragmentTransaction fragmentTransaction =
                     getSupportFragmentManager().beginTransaction();
-            fragmentTransaction.replace(R.id.fragment_container, fragment);
+            fragmentTransaction.replace(R.id.fragment_container, menuFragment);
             fragmentTransaction.commit();
         } else if (id == R.id.nav_meeting_list) {
-            MenuListFragment fragment = new MenuListFragment();
             android.support.v4.app.FragmentTransaction fragmentTransaction =
                     getSupportFragmentManager().beginTransaction();
-            fragmentTransaction.replace(R.id.fragment_container, fragment);
+            fragmentTransaction.replace(R.id.fragment_container, menuListFragment);
             fragmentTransaction.commit();
         } else if (id == R.id.nav_settings) {
-            MenuSettingFragment fragment = new MenuSettingFragment();
             android.support.v4.app.FragmentTransaction fragmentTransaction =
                     getSupportFragmentManager().beginTransaction();
-            fragmentTransaction.replace(R.id.fragment_container, fragment);
+            fragmentTransaction.replace(R.id.fragment_container, menuSettingFragment);
             fragmentTransaction.commit();
         }
 

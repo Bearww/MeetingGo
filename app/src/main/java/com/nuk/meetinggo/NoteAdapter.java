@@ -97,6 +97,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
         // Initialize layout items
         RelativeLayout relativeLayout = (RelativeLayout) convertView.findViewById(R.id.relativeLayout);
         LayerDrawable roundedCard = (LayerDrawable) context.getResources().getDrawable(R.drawable.rounded_card);
+        TextView numberView = (TextView) convertView.findViewById(R.id.numberView);
         TextView titleView = (TextView) convertView.findViewById(R.id.titleView);
         TextView bodyView = (TextView) convertView.findViewById(R.id.bodyView);
         ImageButton favourite = (ImageButton) convertView.findViewById(R.id.favourite);
@@ -107,7 +108,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
 
         if (noteObject != null) {
             // If noteObject not empty -> initialize variables
-            int id = 0;
+            int number = 0;
             String title = context.getString(R.string.note_title);
             String body = context.getString(R.string.note_body);
             String colour = String.valueOf(context.getResources().getColor(R.color.white));
@@ -118,7 +119,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
 
             try {
                 // Get noteObject data and store in variables
-                id = noteObject.getInt(NOTE_ID);
+                number = noteObject.getInt(NOTE_ID);
                 title = noteObject.getString(NOTE_TITLE);
                 body = noteObject.getString(NOTE_BODY);
                 colour = noteObject.getString(NOTE_COLOUR);
@@ -130,7 +131,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
                     hideBody = noteObject.getBoolean(NOTE_HIDE_BODY);
 
                 favoured = noteObject.getBoolean(NOTE_FAVOURED);
-                controlled = getControllable(MemberInfo.memberID);
+                controlled = getControllable(MemberInfo.memberName);
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -162,6 +163,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
             else
                 edit.setVisibility(View.GONE);
 
+            numberView.setText(String.valueOf(number));
             titleView.setText(title);
 
             // If hidBody is true -> hide body of note
@@ -201,8 +203,6 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
                 }
             });
 
-            final int finalID = id;
-            final String finalBody = body;
             edit.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

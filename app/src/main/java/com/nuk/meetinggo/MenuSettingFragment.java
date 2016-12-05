@@ -47,8 +47,11 @@ public class MenuSettingFragment extends Fragment {
                 if (TextUtils.isEmpty(newIP))
                     ipText.requestFocus();
                 else {
-                    if (setIP(newIP))
+                    if (setIP(newIP)) {
+                        // TODO try login success or fail
                         Toast.makeText(getContext(), "IP 設定成功", Toast.LENGTH_LONG).show();
+                        ipText.setText(newIP);
+                    }
                     else
                         Toast.makeText(getContext(), "IP 設定失敗", Toast.LENGTH_LONG).show();
                 }

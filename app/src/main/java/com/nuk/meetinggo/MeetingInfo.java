@@ -17,6 +17,17 @@ public class MeetingInfo {
     public static int groupID;
     public static int topicID;
 
+    public static String meetingTitle = "";
+    public static String meetingDate = "";
+    public static String meetingTime = "";
+    public static String meetingPosition = "";
+
+    /********************************************************/
+
+    public static String controller = MemberInfo.memberID;
+    //public static String chairman = "";
+    public static String presenter = "";
+
     public final static String CONTENT_LINK = "link";
     public final static String CONTENT_FORM = "form";
     public final static String CONTENT_ADDRESS = "addr";
@@ -53,10 +64,6 @@ public class MeetingInfo {
 
     public final static String CONTENT_TOPIC_DOCUMENT = "get_topic_doc_list";
     public static String GET_TOPIC_DOCUMENT = "";
-
-    public static String controller = MemberInfo.memberID;
-    //public static String chairman = "";
-    public static String presenter = "";
 
     public static Boolean isController(String id) {
         return (controller.compareTo(id) == 0);

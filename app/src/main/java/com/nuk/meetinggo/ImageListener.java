@@ -7,9 +7,12 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -53,20 +56,18 @@ public class ImageListener implements Runnable {
             isConnected = false;
         }
 
-        listen();
-/*
         try {
             if (isConnected) {
-                //out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(mSocket
-                //        .getOutputStream())), true); // Create output stream to send data to server
-                //in = mSocket.getInputStream();
-
-
+                out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(mSocket
+                        .getOutputStream())), true); // Create output stream to send data to server
+                in = mSocket.getInputStream();
             }
         } catch (IOException e) {
-            Log.e("remotedroid", "Error while creating OutWriter", e);
+            Log.e("[IL]", "Error while creating OutWriter", e);
+            isConnected = false;
         }
-*/
+
+        listen();
     }
 
     private TimerTask getImageTask = new TimerTask() {
@@ -80,7 +81,7 @@ public class ImageListener implements Runnable {
                         Constants.DELIMITER +
                         DeviceHeight;
 
-                RemoteControlFragment.sendMessage(message);
+                sendMessage(message);
             }
         }
     };

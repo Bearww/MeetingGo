@@ -145,13 +145,13 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                     memberLayout.setVisibility(View.VISIBLE);
                     controlLayout.setVisibility(View.INVISIBLE);
 
-                    if (isController(id)) controllerMark.setVisibility(View.VISIBLE);
+                    if (isController(name)) controllerMark.setVisibility(View.VISIBLE);
                     else controllerMark.setVisibility(View.GONE);
 
                     //if (isChairman(id)) chairmanMark.setVisibility(View.VISIBLE);
                     //else chairmanMark.setVisibility(View.GONE);
 
-                    if (isPresenter(id)) presenterMark.setVisibility(View.VISIBLE);
+                    if (isPresenter(name)) presenterMark.setVisibility(View.VISIBLE);
                     else presenterMark.setVisibility(View.GONE);
                 }
             }
@@ -194,7 +194,7 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                                         // Set controller to member
                                         MeetingInfo.controller = finalId;
 
-                                        if (!getControllable(MemberInfo.memberID))
+                                        if (!getControllable(MemberInfo.memberName))
                                             controlViewVisibility(false);
                                         else
                                             controlViewVisibility(true);
@@ -251,7 +251,7 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
                                     public void onClick(DialogInterface dialog, int which) {
                                         // Set controller to member
                                         MeetingInfo.presenter = finalId;
-                                        if (!getControllable(MemberInfo.memberID))
+                                        if (!getControllable(MemberInfo.memberName))
                                             controlViewVisibility(false);
                                         else
                                             controlViewVisibility(true);

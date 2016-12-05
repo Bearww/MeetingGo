@@ -165,6 +165,10 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
                                  int totalItemCount) {}
         });
 
+        if (MeetingInfo.getControllable(MemberInfo.memberName))
+            newRecord.setVisibility(View.VISIBLE);
+        else
+            newRecord.setVisibility(View.INVISIBLE);
 
         // If newRecord button clicked -> Start EditRecordFragment intent with NEW_RECORD_REQUEST as request
         newRecord.setOnClickListener(new View.OnClickListener() {

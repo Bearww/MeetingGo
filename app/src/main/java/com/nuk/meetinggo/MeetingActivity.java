@@ -87,11 +87,7 @@ public class MeetingActivity extends AppCompatActivity implements ActivityCommun
         else
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
 
-        // TODO temp setting
         topicID = 0;
-        MeetingInfo.controller = MemberInfo.memberID;
-        MeetingInfo.presenter = MemberInfo.memberID;
-        //MeetingInfo.chairman = MemberInfo.memberID;
 
         setContentView(R.layout.activity_meeting);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -133,14 +129,16 @@ public class MeetingActivity extends AppCompatActivity implements ActivityCommun
         });
         currentFragment = 0;
 
+        Boolean inited = false;
         Bundle bundle = getIntent().getExtras();
         if(bundle != null) {
             Boolean connectCloud = bundle.getBoolean(Constants.TAG_CONNECTION);
 
             if(connectCloud) {
+                inited = bundle.getBoolean(Constants.TAG_INITIALIZED);
                 GET_MEETING_INFO = LinkCloud.filterLink(bundle.getString(Constants.TAG_LINK));
                 meetingID = LinkCloud.getMeetingID(GET_MEETING_INFO);
-                Log.i("[MA]", "Loading cloud data" + GET_MEETING_INFO);
+                Log.i("[MA]", "Loading cloud data " + GET_MEETING_INFO);
             }
         }
         else {
@@ -149,7 +147,7 @@ public class MeetingActivity extends AppCompatActivity implements ActivityCommun
 
         mListener = new CloudListener(new Handler());
 
-        linkTask = new LinkCloudTask(GET_MEETING_INFO);
+        linkTask = new LinkCloudTask(inited, GET_MEETING_INFO);
         linkTask.execute((Void) null);
     }
 
@@ -275,7 +273,9 @@ public class MeetingActivity extends AppCompatActivity implements ActivityCommun
      */
     public class LinkCloudTask extends AsyncTask<Void, Void, Boolean> {
 
+        private Boolean mInit;
         private String mUrl;
+        private JSONObject mContent;
         private JSONObject mObject;
         private JSONObject mLink;
         private JSONObject mForm;
@@ -284,12 +284,14 @@ public class MeetingActivity extends AppCompatActivity implements ActivityCommun
         private int MAX_RETRY_TIMES = 5;
         private int LINK_SUCCESS = 6000;
 
-        LinkCloudTask(String url) {
+        LinkCloudTask(Boolean init, String url) {
+            mInit = init;
             mUrl = url;
             mTimes = 0;
         }
 
         LinkCloudTask(String url, int times) {
+            mInit = true;
             mUrl = url;
             mTimes = times;
         }
@@ -301,6 +303,7 @@ public class MeetingActivity extends AppCompatActivity implements ActivityCommun
                     mObject = LinkCloud.request(mUrl);
 
                     if (mObject != null && mObject.has(CONTENT_LINK) && mObject.has(CONTENT_FORM)) {
+                        if (!mInit) mContent = mObject.getJSONObject("contents");
                         mLink = mObject.getJSONObject(CONTENT_LINK);
                         mForm = mObject.getJSONObject(CONTENT_FORM);
                         return true;
@@ -322,6 +325,16 @@ public class MeetingActivity extends AppCompatActivity implements ActivityCommun
             linkTask = null;
             Boolean finish = true;
             if (success) {
+                if (!mInit && mContent != null) {
+                    try {
+                        MeetingInfo.controller = mContent.getString("moderator");
+                        MeetingInfo.meetingDate = mContent.getString("date");
+                        MeetingInfo.meetingTime = mContent.getString("time");
+                    } catch (JSONException e) {
+                        Log.i("[MA]", "Fail to get meeting info");
+                        e.printStackTrace();
+                    }
+                }
                 if (mForm != null) {
                     try {
                         if (mForm.has(CONTENT_ANSWER)) {

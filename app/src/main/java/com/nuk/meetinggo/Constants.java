@@ -22,6 +22,7 @@ public class Constants {
     public static final String TAG_CONNECTION = "connection";
     public static final String TAG_LINK_DATA = "link_data";
     public static final String TAG_LINK = "cloud_link";
+    public static final String TAG_INITIALIZED = "initialized";
 
     public static final int FRAMES_PER_SECOND = 1;
 

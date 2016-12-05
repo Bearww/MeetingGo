@@ -7,71 +7,90 @@
     android:animateLayoutChanges="true"
     android:background="@color/background_white" >
 
-    <include
-        android:id="@+id/toolbarMain"
-        layout="@layout/toolbar"/>
-
-    <ListView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/beginList"
-        android:divider="@null"
-        android:dividerHeight="8dp"
-        android:drawSelectorOnTop="true"
-        android:fastScrollEnabled="true"
-        android:scrollbarStyle="outsideOverlay"
-        android:paddingRight="16dp"
-        android:paddingLeft="16dp"
-        android:clipToPadding="false"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:layout_below="@+id/beginView" />
-
     <View
         android:layout_width="match_parent"
         android:layout_height="@dimen/shadow_elevation"
-        android:layout_below="@+id/toolbarMain"
         android:layout_alignParentRight="true"
         android:layout_alignParentLeft="true"
         android:background="@drawable/drop_shadow" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="進行中會議"
-        android:id="@+id/beginView"
-        android:layout_below="@+id/toolbarMain"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="即將開始會議"
-        android:id="@+id/futureView"
-        android:layout_below="@+id/beginList"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
-
-    <ListView
+    <LinearLayout
         android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="進行中會議"
+            android:id="@+id/beginView" />
+
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/beginList"
+            android:divider="@null"
+            android:dividerHeight="8dp"
+            android:drawSelectorOnTop="true"
+            android:fastScrollEnabled="true"
+            android:scrollbarStyle="outsideOverlay"
+            android:paddingRight="16dp"
+            android:paddingLeft="16dp"
+            android:clipToPadding="false"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="即將開始會議"
+            android:id="@+id/futureView" />
+
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/futureList"
+            android:divider="@null"
+            android:dividerHeight="8dp"
+            android:drawSelectorOnTop="true"
+            android:fastScrollEnabled="true"
+            android:scrollbarStyle="outsideOverlay"
+            android:paddingRight="16dp"
+            android:paddingLeft="16dp"
+            android:clipToPadding="false"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+
+    </LinearLayout>
+
+    <ImageButton
+        android:layout_width="65dp"
+        android:layout_height="65dp"
+        android:id="@+id/newMeeting"
+        android:scaleType="fitXY"
+        android:background="@drawable/ic_new_selector"
+        android:layout_marginBottom="30dp"
+        android:layout_marginRight="30dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:contentDescription="@string/new_meeting_content_description" />
+
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/futureList"
-        android:divider="@null"
-        android:dividerHeight="8dp"
-        android:drawSelectorOnTop="true"
-        android:fastScrollEnabled="true"
-        android:scrollbarStyle="outsideOverlay"
-        android:paddingRight="16dp"
-        android:paddingLeft="16dp"
-        android:clipToPadding="false"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:layout_below="@+id/futureView"
+        android:id="@+id/noMeetings"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/no_meetings_text"
+        android:textColor="@color/theme_primary"
+        android:textStyle="bold"
         android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
         android:layout_alignParentStart="true"
-        android:layout_alignParentBottom="true" />
+        android:layout_alignParentEnd="true"
+        android:gravity="center"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_centerInParent="true"
+        android:visibility="invisible" />
 
 </RelativeLayout>

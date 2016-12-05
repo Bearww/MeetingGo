@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.nuk.meetinggo.MenuActivity.LINK_DATA;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -75,7 +76,7 @@ public class MenuFragment extends Fragment {
 
             if(connectCloud) {
                 Log.i("[MF]", "Loading cloud data");
-                intent.putExtra(Constants.TAG_LINK_DATA, bundle.getString(Constants.TAG_LINK_DATA));
+                intent.putExtra(Constants.TAG_LINK_DATA, LINK_DATA);
                 startActivity(intent);
             }
             else
@@ -180,6 +181,7 @@ public class MenuFragment extends Fragment {
                 Log.i("[MenuF]", "Send to Cloud " + (mLinkSuccess ? "Success" : "Fail"));
                 intent.putExtra(Constants.TAG_CONNECTION, mLinkSuccess);
                 intent.putExtra(Constants.TAG_LINK, mLink);
+                intent.putExtra(Constants.TAG_INITIALIZED, false);
 
                 startActivity(intent);
             } else {

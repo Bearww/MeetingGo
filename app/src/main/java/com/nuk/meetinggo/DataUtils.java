@@ -37,6 +37,8 @@ public class DataUtils {
 
     public static final String APP_FOLDER_NAME = "/MeetingGo/"; // Local app folder name
 
+    public static final String MEETINGS_FILE_NAME = "meetings.json"; // Local meetings file name
+
     public static final String NOTES_FILE_NAME = "notes.json"; // Local notes file name
     public static final String NOTES_ARRAY_NAME = "notes"; // Root object name
 
@@ -55,6 +57,18 @@ public class DataUtils {
 
     // Cloud data constants used in key-value store
     public static final String CLOUD_UPDATE_CODE = "updateCode";
+    public static final String CLOUD_UPDATE_TYPE = "updateType";
+
+    // Meeting data constants used in intents and in key-value store
+    public static final int NEW_MEETING_REQUEST = 60000;
+    public static final String MEETING_REQUEST_CODE = "requestCode";
+    public static final String MEETING_ID = "id";
+    public static final String MEETING_TITLE = "title";
+    public static final String MEETING_DATE = "date";
+    public static final String MEETING_TIME = "time";
+    public static final String MEETING_CHAIRMAN = "chairman";
+    public static final String MEETING_FAVOURED = "favoured";
+    public static final String MEETING_POSITION = "position";
 
     // Note data constants used in intents and in key-value store
     public static final int NEW_NOTE_REQUEST = 60000;

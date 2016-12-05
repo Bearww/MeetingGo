@@ -60,7 +60,6 @@ import static com.nuk.meetinggo.DataUtils.isExternalStorageWritable;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
 import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
-import static com.nuk.meetinggo.MeetingInfo.getControllable;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 
 public class MainFragment extends Fragment implements AdapterView.OnItemClickListener,
@@ -158,12 +157,13 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
         if (toolbar != null)
             initToolbar();
-
-        if (getControllable(MemberInfo.memberID))
+/*
+        Log.i("[MF]", MemberInfo.memberName);
+        if (getControllable(MemberInfo.memberName))
             newNote.setVisibility(View.VISIBLE);
         else
             newNote.setVisibility(View.GONE);
-
+*/
         newNoteButtonBaseYCoordinate = newNote.getY();
 
         // Initialize NoteAdapter with notes array

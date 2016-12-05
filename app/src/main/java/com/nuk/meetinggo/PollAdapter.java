@@ -126,7 +126,7 @@ public class PollAdapter extends BaseAdapter implements ListAdapter {
             Boolean checked = false;
 
             try {
-                controlled = getControllable(MemberInfo.memberID);
+                controlled = getControllable(MemberInfo.memberName);
 
                 // Get pollObject data and store in variables
                 title = pollObject.getString(POLL_TITLE);

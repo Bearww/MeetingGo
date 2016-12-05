@@ -59,6 +59,7 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
     ImageView mousePad;
     View progressView;
     TextView noConnectionText;
+    MenuItem shareMenu;
 
     private static int currentMode;
     public static int NONE = -1;
@@ -76,7 +77,7 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
     private static PrintWriter out;
     private static InputStream in;
 
-    private int mouse_sensitivity = 1;
+    private int mouseSensitivity = 3;
     private float screenRatio = 1.0f;
 
     private float initX = 0;
@@ -124,25 +125,6 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
         // This activity extends View.OnTouchListener, set this as onTouchListener for all buttons
         leftButton.setOnTouchListener(this);
         rightButton.setOnTouchListener(this);
-/*
-        connectButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(connectServerTask != null)
-                    return;
-
-                if(listener == null) {
-                    // Show a progress spinner, and try to connect to server in another thread.
-                    showProgress(true);
-                    connectServerTask = new ConnectServerTask();
-                    connectServerTask.execute(Constants.SERVER_IP);
-
-                    listener = new Thread(new ImageListener(Constants.LISTEN_PORT, Constants.FRAMES_PER_SECOND, messageHandler));
-                    listener.start();
-                }
-            }
-        });
-*/
         keyboardButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -308,8 +290,8 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
                     float deltaX = (initX - event.getX()) * -1;
                     float deltaY = (initY - event.getY()) * -1;
 
-                    sendMessage(Constants.createMoveMouseMessage(deltaX * mouse_sensitivity
-                            , deltaY * mouse_sensitivity));
+                    sendMessage(Constants.createMoveMouseMessage(deltaX * mouseSensitivity
+                            , deltaY * mouseSensitivity));
 
                     initX = event.getX();
                     initY = event.getY();
@@ -455,6 +437,18 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
 
         // Set an OnMenuItemClickListener to handle menu item clicks
         toolbar.setOnMenuItemClickListener(this);
+
+        Menu menu = toolbar.getMenu();
+
+        if (menu != null) {
+            // Get 'Share' menu item
+            shareMenu = menu.findItem(R.id.action_transmitter);
+/*
+            if (MeetingInfo.getControllable(MemberInfo.memberName))
+                shareMenu.setVisible(true);
+            else
+                shareMenu.setVisible(false);
+*/        }
     }
 
     /**

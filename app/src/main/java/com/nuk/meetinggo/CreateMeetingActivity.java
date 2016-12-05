@@ -56,9 +56,9 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
     private static int CLOUD_FIND = 6003;
     private static int CLOUD_SEND = 6004;
 
-    private static String GROUP_NAME = "group_name";
-    private static String MEETING_NAME = "meeting_title";
-    private static String MEETING_TIME = "meeting_time";
+    private final static String GROUP_NAME = "group_name";
+    private final static String MEETING_NAME = "meeting_title";
+    private final static String MEETING_TIME = "meeting_time";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -178,11 +178,10 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
             try {
                 if(mRequestCode == CLOUD_REQUEST) {
                     Log.i("[CMA]Request", "Create form " + mLinkData);
-                    JSONObject object = LinkCloud.request(LinkCloud.filterLink(mLinkData));
+                    JSONObject object = new JSONObject(mLinkData);
 
                     // Simulate network access.
                     Thread.sleep(2000);
@@ -278,6 +277,7 @@ public class CreateMeetingActivity extends AppCompatActivity implements DatePick
                     intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
 
                     Log.i("[CMA]", "Send to Cloud " + (mLinkSuccess ? "Success" : "Fail"));
+                    intent.putExtra(Constants.TAG_INITIALIZED, false);
                     intent.putExtra(Constants.TAG_CONNECTION, mLinkSuccess);
                     intent.putExtra(Constants.TAG_LINK, mLink);
 

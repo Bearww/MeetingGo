@@ -33,7 +33,7 @@ public class LinkCloud {
 	public static String LOGIN 				= "login.php";
 	public static String MEMBER_CENTER 	= "employee_center.php";
 	public static String MEETING				= "device/employee/em_meeting_running.php";
-	public static String MEETING_INFO		= "back_end/meeting/get_info/get_meeting_info.php?meeting_id=";
+	public static String MEETING_INFO		= "device/employee/meeting/meeting_info.php?meeting_id=";
 	public static String DOC_INFO			= "back_end/meeting/get_info/get_meeting_doc.php?meeting_id=";
 	public static String ADD_MEETING		= "add_meeting.php";
 	public static String JOIN_MEETING		= "device/employee/join_meeting.php";
@@ -48,12 +48,12 @@ public class LinkCloud {
 
 	//---------------------------------------------------------------------------------------------------------------------//
 
-	private final static String DEFAULT_SERVER_IP = "192.168.0.104";
-	//private final static String DEFAULT_SERVER_IP = "192.168.137.1";
+	//private final static String DEFAULT_SERVER_IP = "192.168.0.101";
+	private final static String DEFAULT_SERVER_IP = "192.168.137.1";
 	public static String SERVER_IP = DEFAULT_SERVER_IP;
 	//private static String DEFAULT_WEB_LINK = "http://169.254.156.204/cloud/meeting_cloud/";
-	private static String DEFAULT_WEB_LINK = "http://" + DEFAULT_SERVER_IP + "/cloud/meeting_cloud/";
-	//private static String DEFAULT_WEB_LINK = "http://" + DEFAULT_SERVER_IP + ":8080/meeting_cloud/";
+	//private static String DEFAULT_WEB_LINK = "http://" + DEFAULT_SERVER_IP + "/cloud/meeting_cloud/";
+	private static String DEFAULT_WEB_LINK = "http://" + DEFAULT_SERVER_IP + ":8080/meeting_cloud/";
 
 	public static String BASIC_WEB_LINK = DEFAULT_WEB_LINK;
 	public static int response_status;
