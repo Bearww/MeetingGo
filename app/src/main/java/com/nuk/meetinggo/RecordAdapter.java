@@ -25,7 +25,6 @@ import org.json.JSONObject;
 
 import static com.nuk.meetinggo.DataUtils.RECORD_BODY;
 import static com.nuk.meetinggo.DataUtils.RECORD_FAVOURED;
-import static com.nuk.meetinggo.DataUtils.RECORD_REFERENCE;
 import static com.nuk.meetinggo.DataUtils.RECORD_TITLE;
 import static com.nuk.meetinggo.RecordFragment.checkedArray;
 import static com.nuk.meetinggo.RecordFragment.deleteActive;
@@ -101,8 +100,7 @@ public class RecordAdapter extends BaseAdapter implements ListAdapter {
             // If recordObject not empty -> initialize variables
             String title = context.getString(R.string.record_title);
             String body = context.getString(R.string.record_body);
-            String reference = context.getString(R.string.record_reference);
-            String colour = "#FFFFFF";
+            String colour = String.valueOf(context.getResources().getColor(R.color.white));
             int fontSize = 18;
             Boolean favoured = false;
 
@@ -110,7 +108,6 @@ public class RecordAdapter extends BaseAdapter implements ListAdapter {
                 // Get recordObject data and store in variables
                 title = recordObject.getString(RECORD_TITLE);
                 body = recordObject.getString(RECORD_BODY);
-                reference = recordObject.getString(RECORD_REFERENCE);
                 favoured = recordObject.getBoolean(RECORD_FAVOURED);
 
             } catch (JSONException e) {
@@ -146,8 +143,12 @@ public class RecordAdapter extends BaseAdapter implements ListAdapter {
 
             // If current record is not selected -> set background colour to normal
             else {
-                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(Color.parseColor(colour));
+                if (colour.contains("#"))
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Color.parseColor(colour));
+                else
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Integer.parseInt(colour));
             }
 
             // Set record background style to rounded card
@@ -164,11 +165,15 @@ public class RecordAdapter extends BaseAdapter implements ListAdapter {
                 }
             });
 
+            final String finalRecord = body;
             editButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     LayoutInflater inflater = LayoutInflater.from(context);
                     final View recordView = inflater.inflate(R.layout.dialog_add_record, null);
+
+                    final EditText recordBody = (EditText) recordView.findViewById(R.id.recordBody);
+                    recordBody.setText(finalRecord);
 
                     // Edit record and add record are the same view
                     new AlertDialog.Builder(context)
@@ -179,13 +184,10 @@ public class RecordAdapter extends BaseAdapter implements ListAdapter {
                                 public void onClick(DialogInterface dialog, int which) {
 
                                     // If record field not empty -> continue
-                                    EditText bodyText = (EditText) recordView.findViewById(R.id.recordBody);
-
-                                    String record = bodyText.getText().toString();
+                                    String record = recordBody.getText().toString();
                                     if(TextUtils.isEmpty(record))
-                                        bodyText.setError(context.getString(R.string.error_field_required));
+                                        recordBody.setError(context.getString(R.string.error_field_required));
                                     else {
-                                        // TODO update existed record
                                         updateRecord(context, record, position);
                                     }
                                 }

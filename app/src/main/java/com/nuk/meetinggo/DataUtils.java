@@ -145,6 +145,8 @@ public class DataUtils {
     // Record data constants used in intents and in key-value store
     public static final int NEW_RECORD_REQUEST = 110000;
     public static final String RECORD_REQUEST_CODE = "requestCode";
+    public static final String RECORD_ID = "id";
+    public static final String RECORD_TOPIC = "topic";
     public static final String RECORD_TITLE = "title";
     public static final String RECORD_REFERENCE = "reference";
     public static final String RECORD_BODY = "body";

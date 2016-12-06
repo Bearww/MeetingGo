@@ -14,7 +14,7 @@
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/beginList"
+        android:id="@+id/listView"
         android:divider="@null"
         android:dividerHeight="8dp"
         android:drawSelectorOnTop="true"

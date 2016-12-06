@@ -122,7 +122,9 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
                 number = noteObject.getInt(NOTE_ID);
                 title = noteObject.getString(NOTE_TITLE);
                 body = noteObject.getString(NOTE_BODY);
-                colour = noteObject.getString(NOTE_COLOUR);
+
+                if (noteObject.has(NOTE_COLOUR))
+                    colour = noteObject.getString(NOTE_COLOUR);
 
                 if (noteObject.has(NOTE_FONT_SIZE))
                     fontSize = noteObject.getInt(NOTE_FONT_SIZE);
@@ -131,7 +133,7 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
                     hideBody = noteObject.getBoolean(NOTE_HIDE_BODY);
 
                 favoured = noteObject.getBoolean(NOTE_FAVOURED);
-                controlled = getControllable(MemberInfo.memberName);
+                controlled = getControllable(MemberInfo.memberID);
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -149,11 +151,11 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
             // If search or delete modes are active -> hide favourite button; Show otherwise
             if (searchActive || deleteActive) {
                 favourite.setVisibility(View.INVISIBLE);
-                if(controlled) edit.setVisibility(View.INVISIBLE);
+                if (controlled) edit.setVisibility(View.INVISIBLE);
             }
             else {
                 favourite.setVisibility(View.VISIBLE);
-                if(controlled) edit.setVisibility(View.VISIBLE);
+                if (controlled) edit.setVisibility(View.VISIBLE);
             }
 
             // If presenter modes are active -> show edit button; Hide otherwise
@@ -185,8 +187,12 @@ public class NoteAdapter extends BaseAdapter implements ListAdapter {
 
             // If current note is not selected -> set background colour to normal
             else {
-                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(Color.parseColor(colour));
+                if (colour.contains("#"))
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Color.parseColor(colour));
+                else
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Integer.parseInt(colour));
             }
 
             // Set note background style to rounded card

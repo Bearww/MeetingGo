@@ -97,7 +97,7 @@ public class DocumentAdapter extends BaseAdapter implements ListAdapter {
             // If documentObject not empty -> initialize variables
             String title = context.getString(R.string.document_title);
             String reference = context.getString(R.string.document_reference);
-            String colour = "#FFFFFF";
+            String colour = String.valueOf(context.getResources().getColor(R.color.white));
             int fontSize = 18;
             Boolean hideBody = false;
             Boolean favoured = false;
@@ -150,8 +150,12 @@ public class DocumentAdapter extends BaseAdapter implements ListAdapter {
 
             // If current document is not selected -> set background colour to normal
             else {
-                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(Color.parseColor(colour));
+                if (colour.contains("#"))
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Color.parseColor(colour));
+                else
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Integer.parseInt(colour));
             }
 
             // Set document background style to rounded card

@@ -8,7 +8,6 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -29,8 +28,8 @@ import static com.nuk.meetinggo.EditPollFragment.changeOption;
 import static com.nuk.meetinggo.EditPollFragment.deleteOption;
 import static com.nuk.meetinggo.EditPollFragment.isLastOption;
 import static com.nuk.meetinggo.EditPollFragment.optionChanged;
-import static com.nuk.meetinggo.ViewPollFragment.checkedArray;
 import static com.nuk.meetinggo.PollFragment.editActive;
+import static com.nuk.meetinggo.ViewPollFragment.checkedArray;
 import static com.nuk.meetinggo.ViewPollFragment.pollActive;
 
 /**
@@ -99,14 +98,14 @@ public class OptionAdapter extends BaseAdapter implements ListAdapter {
         if (optionObject != null) {
             // If optionObject not empty -> initialize variables
             String body = context.getString(R.string.option_body);
-            String colour = "#FFFFFF";
+            String colour = String.valueOf(context.getResources().getColor(R.color.white));
             int fontSize = 18;
-            String votes = "0";
+            int votes = 0;
 
             try {
                 // Get optionObject data and store in variables
                 body = optionObject.getString(OPTION_CONTENT);
-                votes = optionObject.getString(OPTION_VOTES);
+                votes = optionObject.getInt(OPTION_VOTES);
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -129,19 +128,7 @@ public class OptionAdapter extends BaseAdapter implements ListAdapter {
                         }
                     }
                 });
-                bodyText.setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (v instanceof EditText) {
-                            v.setFocusable(true);
-                            v.setFocusableInTouchMode(true);
-                        } else {
-                            bodyText.setFocusable(false);
-                            bodyText.setFocusableInTouchMode(false);
-                        }
-                        return false;
-                    }
-                });
+
 
                 bodyView.setVisibility(View.INVISIBLE);
             }
@@ -151,7 +138,7 @@ public class OptionAdapter extends BaseAdapter implements ListAdapter {
                 bodyView.setText(body);
                 bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
 
-                votesView.setText(votes);
+                votesView.setText(String.valueOf(votes));
                 if (pollActive)
                     votesView.setVisibility(View.VISIBLE);
                 else
@@ -166,8 +153,12 @@ public class OptionAdapter extends BaseAdapter implements ListAdapter {
 
             // If current note is not selected -> set background colour to normal
             else {
-                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(Color.parseColor(colour));
+                if (colour.contains("#"))
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Color.parseColor(colour));
+                else
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Integer.parseInt(colour));
             }
 
             // Set option background style to rounded card

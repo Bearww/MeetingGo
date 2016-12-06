@@ -90,7 +90,7 @@ public class AnswerAdapter extends BaseAdapter implements ListAdapter {
             // If answerObject not empty -> initialize variables
             String title = context.getString(R.string.question_title);
             String body = context.getString(R.string.question_body);
-            String colour = "#FFFFFF";
+            String colour = String.valueOf(context.getResources().getColor(R.color.white));
             int fontSize = 18;
             Boolean favoured = false;
 
@@ -118,8 +118,12 @@ public class AnswerAdapter extends BaseAdapter implements ListAdapter {
             bodyView.setText(body);
             bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
 
-            ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                    .setColor(Color.parseColor(colour));
+            if (colour.contains("#"))
+                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                        .setColor(Color.parseColor(colour));
+            else
+                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                        .setColor(Integer.parseInt(colour));
 
             // Set answer background style to rounded card
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {

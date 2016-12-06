@@ -101,7 +101,7 @@ public class MeetingInfoAdapter extends BaseAdapter implements ListAdapter {
             String time = context.getString(R.string.meeting_body);
             String meetingTime = "";
             String chairman = "";
-            String colour = "#FFFFFF";
+            String colour = String.valueOf(context.getResources().getColor(R.color.white));
             int fontSize = 18;
             Boolean favoured = false;
             Boolean sameDate = false;
@@ -161,8 +161,12 @@ public class MeetingInfoAdapter extends BaseAdapter implements ListAdapter {
 
             // If current meeting is not selected -> set background colour to normal
             else {
-                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(Color.parseColor(colour));
+                if (colour.contains("#"))
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Color.parseColor(colour));
+                else
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Integer.parseInt(colour));
             }
 
             // Set meeting background style to rounded card

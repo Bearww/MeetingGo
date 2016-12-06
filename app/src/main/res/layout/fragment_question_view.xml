@@ -89,7 +89,7 @@
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/beginList"
+        android:id="@+id/listView"
         android:divider="@color/black_20"
         android:dividerHeight="5dp"
         android:drawSelectorOnTop="true"
@@ -124,8 +124,7 @@
         android:id="@+id/messageLayout"
         android:background="@color/white"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_marginBottom="50sp">
+        android:layout_alignParentLeft="true">
 
         <EditText
             android:layout_width="wrap_content"

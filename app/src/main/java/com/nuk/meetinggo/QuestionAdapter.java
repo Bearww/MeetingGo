@@ -97,7 +97,7 @@ public class QuestionAdapter extends BaseAdapter implements ListAdapter {
             String title = context.getString(R.string.question_title);
             String body = context.getString(R.string.question_body);
             int topic = 0;
-            String colour = "#FFFFFF";
+            String colour = String.valueOf(context.getResources().getColor(R.color.white));
             int fontSize = 18;
             Boolean favoured = false;
 
@@ -147,8 +147,12 @@ public class QuestionAdapter extends BaseAdapter implements ListAdapter {
 
             // If current question is not selected -> set background colour to normal
             else {
-                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(Color.parseColor(colour));
+                if (colour.contains("#"))
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Color.parseColor(colour));
+                else
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Integer.parseInt(colour));
             }
 
             // Set question background style to rounded card

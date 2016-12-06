@@ -94,7 +94,10 @@ public class CloudListener implements Runnable {
                     Log.i("[CL]" + mFragment.toString(), "Receive:" + newObject.toString());
 
                     if (oldObject == null
-                            || (!newObject.toString().equals(oldObject.toString()))) {
+                            || (newObject.toString().length() > 5)) {
+                        if (oldObject != null && newObject.toString().equals(oldObject.toString()))
+                            return;
+
                         // Cloud data change, inform current fragment change view
                         Bundle bundle = new Bundle();
                         bundle.putString(CLOUD_UPDATE_CODE, newObject.toString());

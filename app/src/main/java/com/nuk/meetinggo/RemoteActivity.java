@@ -1,9 +1,13 @@
 package com.nuk.meetinggo;
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
@@ -11,6 +15,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+
+import java.io.IOException;
 
 import static com.nuk.meetinggo.DataUtils.NOTE_BODY;
 import static com.nuk.meetinggo.DataUtils.NOTE_ID;
@@ -36,6 +42,9 @@ public class RemoteActivity extends AppCompatActivity {
     private static float tabLayoutBaseYCoordinate; // Base Y coordinate of tab layout
 
     public static String topicBody = "";
+
+    public final static int PICK_IMAGE_REQUEST = 1;
+    //public final static int PICK_KITKAT_IMAGE_REQUEST = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +81,7 @@ public class RemoteActivity extends AppCompatActivity {
             public void onTabSelected(TabLayout.Tab tab) {
                 viewPager.setCurrentItem(tab.getPosition());
                 currentFragment = tab.getPosition();
-                mListener.fragmentChanged(adapter.getItem(tab.getPosition()));
+                mListener.fragmentChanged(adapter.getItem(currentFragment));
             }
 
             @Override
@@ -91,6 +100,7 @@ public class RemoteActivity extends AppCompatActivity {
         if(bundle != null) {
             topicID = bundle.getInt(NOTE_ID);
             topicBody = bundle.getString(NOTE_BODY);
+            Log.i("[RA]", topicID + topicBody);
         }
         else {
             Log.i("[RA]", "No topic data");
@@ -173,6 +183,28 @@ public class RemoteActivity extends AppCompatActivity {
 
         if(fragment instanceof IOnFocusListenable) {
             ((IOnFocusListenable) fragment).onWindowFocusChanged(hasFocus);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+
+            Uri uri = data.getData();
+
+            try {
+                Log.i("[RA]", "Received image " + uri.toString());
+
+                RemoteControlFragment fragment = (RemoteControlFragment) adapter.getItem(currentFragment);
+
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+
+                fragment.setImage(bitmap);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -85,12 +86,17 @@ public class MenuActivity extends AppCompatActivity
                     Log.i("[MA]map", key + " " + meetingInfo.get(key));
                 }
 
-                LINK_BEGIN_MEETING = meetingInfo.get(CONTENT_BEGIN);
-                LINK_OLD_MEETING = meetingInfo.get(CONTENT_OLD);
-                LINK_FUTURE_MEETING = meetingInfo.get(CONTENT_FUTURE);
+                if (meetingInfo.isEmpty()) {
+                    Toast.makeText(getApplicationContext(), "登入失敗", Toast.LENGTH_LONG).show();
+                }
+                else {
+                    LINK_BEGIN_MEETING = meetingInfo.get(CONTENT_BEGIN);
+                    LINK_OLD_MEETING = meetingInfo.get(CONTENT_OLD);
+                    LINK_FUTURE_MEETING = meetingInfo.get(CONTENT_FUTURE);
 
-                linkTask = new LinkCloudTask(LINK_OLD_MEETING);
-                linkTask.execute();
+                    linkTask = new LinkCloudTask(LINK_OLD_MEETING);
+                    linkTask.execute();
+                }
             } catch (JSONException e) {
                 e.printStackTrace();
             }

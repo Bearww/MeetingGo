@@ -40,6 +40,7 @@ import static com.nuk.meetinggo.DataUtils.MEMBER_COLOUR;
 import static com.nuk.meetinggo.DataUtils.MEMBER_EMAIL;
 import static com.nuk.meetinggo.DataUtils.MEMBER_ID;
 import static com.nuk.meetinggo.DataUtils.MEMBER_NAME;
+import static com.nuk.meetinggo.DataUtils.MEMBER_ONLINE;
 import static com.nuk.meetinggo.DataUtils.NEW_MEMBER_REQUEST;
 import static com.nuk.meetinggo.DataUtils.deleteMembers;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
@@ -128,8 +129,9 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
         JSONArray tempMembers = retrieveData(localPath);
 
         // If not null -> equal main members to retrieved members
-        if (tempMembers != null)
-            members = tempMembers;
+        if (tempMembers != null) {
+            //members = tempMembers;
+        }
         else {
             JSONObject object = new JSONObject();
 
@@ -137,7 +139,7 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
                 object.put(MEMBER_ID, MemberInfo.memberID);
                 object.put(MEMBER_NAME, MemberInfo.memberName);
                 object.put(MEMBER_EMAIL, MemberInfo.memberEmail);
-                object.put(MEMBER_COLOUR, "#FF4081");
+                object.put(MEMBER_ONLINE, 1);
 
                 members.put(object);
             } catch (JSONException e) {
@@ -153,7 +155,7 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
         
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.beginList);
+        listView = (ListView) view.findViewById(R.id.listView);
         newMember = (ImageButton) view.findViewById(R.id.newMember);
         
         if (toolbar != null)
@@ -448,10 +450,11 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
 
                             // If save successful -> toast successfully deleted
                             if (saveSuccessful) {
-                                Toast toast = Toast.makeText(getContext(),
-                                        getResources().getString(R.string.toast_deleted),
-                                        Toast.LENGTH_SHORT);
-                                toast.show();
+                                Log.i("[MF]", getResources().getString(R.string.toast_deleted));
+                                //Toast toast = Toast.makeText(getContext(),
+                                //        getResources().getString(R.string.toast_deleted),
+                                //        Toast.LENGTH_SHORT);
+                                //toast.show();
                             }
 
                             // Smooth scroll to top
@@ -736,11 +739,7 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
                                         member.put(MEMBER_ID, id.getString(i));
                                         member.put(MEMBER_NAME, name.getString(i));
                                         member.put(MEMBER_EMAIL, mail.getString(i));
-
-                                        if (online.getInt(i) > 0)
-                                            member.put(MEMBER_COLOUR, "#FFFFFF");
-                                        else
-                                            member.put(MEMBER_COLOUR, "#F56545");
+                                        member.put(MEMBER_ONLINE, online.getInt(i));
 
                                         members.put(member);
                                     }
@@ -750,12 +749,7 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
 
                                         member.put(MEMBER_NAME, name.getString(i));
                                         member.put(MEMBER_EMAIL, mail.getString(i));
-
-                                        if (online.getInt(i) > 0)
-                                            member.put(MEMBER_COLOUR, "#FFFFFF");
-                                        else
-                                            member.put(MEMBER_COLOUR, "#F56545");
-
+                                        member.put(MEMBER_ONLINE, online.getInt(i));
 
                                         members.put(position, member);
                                     }
@@ -828,10 +822,11 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
                     Boolean saveSuccessful = saveData(localPath, members);
 
                     if (saveSuccessful) {
-                        Toast toast = Toast.makeText(getContext(),
-                                getResources().getString(R.string.toast_new_member),
-                                Toast.LENGTH_SHORT);
-                        toast.show();
+                        Log.i("[MF]", getResources().getString(R.string.toast_new_member));
+                        //Toast toast = Toast.makeText(getContext(),
+                        //        getResources().getString(R.string.toast_new_member),
+                        //        Toast.LENGTH_SHORT);
+                        //toast.show();
                     }
                 }
                 // If new member was saved
@@ -868,10 +863,11 @@ public class MemberFragment extends Fragment implements AdapterView.OnItemClickL
                         Boolean saveSuccessful = saveData(localPath, members);
 
                         if (saveSuccessful) {
-                            Toast toast = Toast.makeText(getContext(),
-                                    getResources().getString(R.string.toast_new_member),
-                                    Toast.LENGTH_SHORT);
-                            toast.show();
+                            Log.i("[MF]", getResources().getString(R.string.toast_new_member));
+                            //Toast toast = Toast.makeText(getContext(),
+                            //        getResources().getString(R.string.toast_new_member),
+                            //        Toast.LENGTH_SHORT);
+                            //toast.show();
                         }
                     }
                 }

@@ -136,8 +136,8 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         JSONArray tempNotes = retrieveData(localPath);
 
         // If not null -> equal main notes to retrieved notes
-        if (tempNotes != null)
-            notes = tempNotes;
+        //if (tempNotes != null)
+        //    notes = tempNotes;
 
         mManager = getFragmentManager();
 
@@ -151,7 +151,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.beginList);
+        listView = (ListView) view.findViewById(R.id.listView);
         newNote = (ImageButton) view.findViewById(R.id.newNote);
         noNotes = (TextView) view.findViewById(R.id.noNotes);
 
@@ -700,10 +700,11 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
                             // If save successful -> toast successfully deleted
                             if (saveSuccessful) {
-                                Toast toast = Toast.makeText(getContext(),
-                                        getResources().getString(R.string.toast_deleted),
-                                        Toast.LENGTH_SHORT);
-                                toast.show();
+                                Log.i("[MF]", getResources().getString(R.string.toast_deleted));
+                                //Toast toast = Toast.makeText(getContext(),
+                                //        getResources().getString(R.string.toast_deleted),
+                                //        Toast.LENGTH_SHORT);
+                                //toast.show();
                             }
 
                             // Smooth scroll to top
@@ -1191,11 +1192,11 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                     if (mLinkSuccess = LinkCloud.hasData())
                         return true;
                 }
-                // Update exsited note
+                // Update existed note
                 else {
-                    // Update database
-                    mLinkData = LinkCloud.submitFormPost(form, addNoteLink);
-                    if (mLinkSuccess = LinkCloud.hasData())
+                    // TODO Update database
+                    //mLinkData = LinkCloud.submitFormPost(form, addNoteLink);
+                    //if (mLinkSuccess = LinkCloud.hasData())
                         return true;
                 }
             } catch (IOException e) {
@@ -1220,10 +1221,11 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                     Boolean saveSuccessful = saveData(localPath, notes);
 
                     if (saveSuccessful) {
-                        Toast toast = Toast.makeText(getContext(),
-                                getResources().getString(R.string.toast_new_note),
-                                Toast.LENGTH_SHORT);
-                        toast.show();
+                        Log.i("[MF]", getResources().getString(R.string.toast_new_note));
+                        //Toast toast = Toast.makeText(getContext(),
+                        //        getResources().getString(R.string.toast_new_note),
+                        //        Toast.LENGTH_SHORT);
+                        //toast.show();
                     }
 
                     if (notes.length() == 0)
@@ -1258,10 +1260,11 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                         Boolean saveSuccessful = saveData(localPath, notes);
 
                         if (saveSuccessful) {
-                            Toast toast = Toast.makeText(getContext(),
-                                    getResources().getString(R.string.toast_new_note),
-                                    Toast.LENGTH_SHORT);
-                            toast.show();
+                            Log.i("[MF]", getResources().getString(R.string.toast_new_note));
+                            //Toast toast = Toast.makeText(getContext(),
+                            //        getResources().getString(R.string.toast_new_note),
+                            //        Toast.LENGTH_SHORT);
+                            //toast.show();
                         }
 
                         // If no notes -> show 'Press + to add new note' text, invisible otherwise
@@ -1299,10 +1302,11 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                         Boolean saveSuccessful = saveData(localPath, notes);
 
                         if (saveSuccessful) {
-                            Toast toast = Toast.makeText(getContext(),
-                                    getResources().getString(R.string.toast_note_saved),
-                                    Toast.LENGTH_SHORT);
-                            toast.show();
+                            Log.i("[MF]", getResources().getString(R.string.toast_note_saved));
+                            //Toast toast = Toast.makeText(getContext(),
+                            //        getResources().getString(R.string.toast_note_saved),
+                            //        Toast.LENGTH_SHORT);
+                            //toast.show();
                         }
                     }
                 }

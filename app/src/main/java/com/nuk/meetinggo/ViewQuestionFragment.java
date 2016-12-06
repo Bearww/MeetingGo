@@ -31,6 +31,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +48,7 @@ import static com.nuk.meetinggo.DataUtils.QUESTION_ID;
 import static com.nuk.meetinggo.DataUtils.QUESTION_RECEIVER;
 import static com.nuk.meetinggo.DataUtils.QUESTION_REQUEST_CODE;
 import static com.nuk.meetinggo.DataUtils.QUESTION_TITLE;
+import static com.nuk.meetinggo.DataUtils.QUESTION_TOPIC;
 
 public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItemClickListener, IOnFocusListenable {
 
@@ -76,8 +78,10 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
 
     // Defaults
     private String questionID = "0"; // question default
+    private String questionTopic = "0"; // question topic default
     private String colour = "#FFFFFF"; // white default
     private int fontSize = 18; // Medium default
+    private String message = ""; // message default
 
     private int lastFirstVisibleItem = -1; // Last first item seen in list view scroll changed
     private float messageLayoutBaseYCoordinate; // Base Y coordinate of message layout
@@ -122,7 +126,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
         titleText = (TextView) view.findViewById(R.id.titleText);
         bodyText = (TextView) view.findViewById(R.id.bodyText);
         noAnswers = (TextView) view.findViewById(R.id.noAnswers);
-        listView = (ListView) view.findViewById(R.id.beginList);
+        listView = (ListView) view.findViewById(R.id.listView);
         relativeLayoutView = (RelativeLayout) view.findViewById(R.id.relativeLayoutView);
         messageText = (EditText) view.findViewById(R.id.messageText);
         sendText = (TextView) view.findViewById(R.id.sendText);
@@ -142,6 +146,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
             // If current answer is not new -> initialize colour, font, hideBody and Textviews
             if (bundle.getInt(QUESTION_REQUEST_CODE) != NEW_QUESTION_REQUEST) {
                 questionID = bundle.getString(QUESTION_ID);
+                questionTopic = bundle.getString(QUESTION_TOPIC);
                 colour = bundle.getString(QUESTION_COLOUR);
                 fontSize = bundle.getInt(QUESTION_FONT_SIZE);
 
@@ -150,7 +155,13 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
                 bodyText.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
 
                 try {
-                    answers = new JSONArray(bundle.getString(ANSWER_ARRAY));
+                    Log.i("[VQF]", bundle.getString(ANSWER_ARRAY));
+                    // Init answers array
+                    if (!TextUtils.isEmpty(bundle.getString(ANSWER_ARRAY)))
+                        answers = new JSONArray(bundle.getString(ANSWER_ARRAY));
+                    else
+                        answers = new JSONArray();
+
                     adapter = new AnswerAdapter(getContext(), answers);
                     listView.setAdapter(adapter);
 
@@ -163,9 +174,6 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
                     e.printStackTrace();
                 }
             }
-
-            // Set background colour to question colour
-            relativeLayoutView.setBackgroundColor(Color.parseColor(colour));
 
             // Get receiver
             receiver = bundle.getParcelable(QUESTION_RECEIVER);
@@ -199,7 +207,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
         sendText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String message = messageText.getText().toString();
+                message = messageText.getText().toString();
 
                 if(!TextUtils.isEmpty(message)) {
                     linkTask = new LinkCloudTask(SEND_MESSAGE);
@@ -547,6 +555,9 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
 
         private int mRequest;
 
+        private Boolean mLinkSuccess;
+        private String mLinkData;
+
         LinkCloudTask(int request) {
             mRequest = request;
         }
@@ -554,12 +565,20 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
         @Override
         protected Boolean doInBackground(Void... params) {
             if (mRequest == SEND_MESSAGE) {
-                // TODO link cloud and send
                 Map<String, String> form = new HashMap<>();
 
-                form.put("topic_id", String.valueOf(MeetingInfo.topicID));
+                form.put("topic_id", questionTopic);
                 form.put("question_id", questionID);
-                return true;
+                form.put("answer", message);
+
+                // Insert to database
+                try {
+                    mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_ANSWER);
+                    if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             return false;
@@ -574,7 +593,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
                     try {
                         // Add new question to array
                         newAnswerObject = new JSONObject();
-                        newAnswerObject.put(ANSWER_CONTENT, messageText.getText().toString());
+                        newAnswerObject.put(ANSWER_CONTENT, message);
                         newAnswerObject.put(ANSWER_OWNER, MemberInfo.memberName);
 
                         answers.put(newAnswerObject);
@@ -594,6 +613,7 @@ public class ViewQuestionFragment extends Fragment implements Toolbar.OnMenuItem
                         else
                             noAnswers.setVisibility(View.INVISIBLE);
                     }
+                    message = "";
                     messageText.setText("");
                 }
             }

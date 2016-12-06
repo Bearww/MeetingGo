@@ -42,6 +42,10 @@ public class SettingFragment extends Fragment implements DatePickerDialog.OnDate
         meetingTime = (TextView) view.findViewById(R.id.timeText);
         meetingStart = (Button) view.findViewById(R.id.startButton);
 
+        meetingTitle.setText(MeetingInfo.meetingTitle);
+        meetingLocation.setText(MeetingInfo.meetingLocation);
+
+        meetingDate.setText(MeetingInfo.meetingDate);
         meetingDate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -49,6 +53,7 @@ public class SettingFragment extends Fragment implements DatePickerDialog.OnDate
             }
         });
 
+        meetingTime.setText(MeetingInfo.meetingTime);
         meetingTime.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

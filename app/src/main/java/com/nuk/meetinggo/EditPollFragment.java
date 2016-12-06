@@ -125,7 +125,7 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarEdit);
-        listView = (ListView) view.findViewById(R.id.beginList);
+        listView = (ListView) view.findViewById(R.id.listView);
         titleEdit = (EditText) view.findViewById(R.id.titleEdit);
         bodyEdit = (EditText) view.findViewById(R.id.bodyEdit);
         relativeLayoutEdit = (RelativeLayout) view.findViewById(R.id.relativeLayoutEdit);
@@ -177,17 +177,21 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
                 bodyEdit.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
 
                 try {
-                    options = new JSONArray(bundle.getString(OPTION_ARRAY));
+                    if (bundle.getString(OPTION_ARRAY) != null) {
+                        options = new JSONArray(bundle.getString(OPTION_ARRAY));
 
-                    if (options.length() > 0) {
-                        JSONObject object = options.getJSONObject(options.length() - 1);
+                        if (options.length() > 0) {
+                            JSONObject object = options.getJSONObject(options.length() - 1);
 
-                        if (!TextUtils.isEmpty(object.getString(OPTION_CONTENT)))
+                            if (!TextUtils.isEmpty(object.getString(OPTION_CONTENT)))
+                                addOption();
+                        } else
                             addOption();
                     }
-                    else
+                    else {
+                        options = new JSONArray();
                         addOption();
-
+                    }
                     adapter = new OptionAdapter(getContext(), options);
                     listView.setAdapter(adapter);
                 } catch (JSONException e) {
@@ -203,9 +207,6 @@ public class EditPollFragment extends Fragment implements AdapterView.OnItemClic
                 titleEdit.requestFocus();
                 imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
             }
-
-            // Set background colour to poll colour
-            relativeLayoutEdit.setBackgroundColor(Color.parseColor(colour));
 
             // Get receiver
             receiver = bundle.getParcelable(POLL_RECEIVER);

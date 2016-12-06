@@ -32,6 +32,7 @@ import static com.nuk.meetinggo.MeetingInfo.CONTENT_LINK;
 import static com.nuk.meetinggo.MeetingInfo.CONTENT_MEMBER;
 import static com.nuk.meetinggo.MeetingInfo.CONTENT_POLL;
 import static com.nuk.meetinggo.MeetingInfo.CONTENT_QUESTION;
+import static com.nuk.meetinggo.MeetingInfo.CONTENT_RECORD;
 import static com.nuk.meetinggo.MeetingInfo.CONTENT_START;
 import static com.nuk.meetinggo.MeetingInfo.CONTENT_TOPIC;
 import static com.nuk.meetinggo.MeetingInfo.CONTENT_TOPIC_BODY;
@@ -42,6 +43,7 @@ import static com.nuk.meetinggo.MeetingInfo.GET_MEETING_INFO;
 import static com.nuk.meetinggo.MeetingInfo.GET_MEETING_MEMBER;
 import static com.nuk.meetinggo.MeetingInfo.GET_MEETING_POLL;
 import static com.nuk.meetinggo.MeetingInfo.GET_MEETING_QUESTION;
+import static com.nuk.meetinggo.MeetingInfo.GET_MEETING_RECORD;
 import static com.nuk.meetinggo.MeetingInfo.GET_MEETING_START;
 import static com.nuk.meetinggo.MeetingInfo.GET_MEETING_TOPIC;
 import static com.nuk.meetinggo.MeetingInfo.GET_TOPIC_BODY;
@@ -327,7 +329,7 @@ public class MeetingActivity extends AppCompatActivity implements ActivityCommun
             if (success) {
                 if (!mInit && mContent != null) {
                     try {
-                        MeetingInfo.controller = mContent.getString("moderator");
+                        MeetingInfo.controller = mContent.getString("moderator_id");
                         MeetingInfo.meetingDate = mContent.getString("date");
                         MeetingInfo.meetingTime = mContent.getString("time");
                     } catch (JSONException e) {
@@ -384,6 +386,16 @@ public class MeetingActivity extends AppCompatActivity implements ActivityCommun
                         else {
                             Log.i("[MA]", "Fail to fetch link " + CONTENT_QUESTION);
                             GET_MEETING_QUESTION = "";
+                            finish = false;
+                        }
+
+                        if (mForm.has(CONTENT_RECORD)) {
+                            mObject = mForm.getJSONObject(CONTENT_RECORD);
+                            GET_MEETING_RECORD = (!mObject.has(CONTENT_ADDRESS) ? "" : mObject.getString(CONTENT_ADDRESS));
+                        }
+                        else {
+                            Log.i("[MA]", "Fail to fetch link " + CONTENT_RECORD);
+                            GET_MEETING_RECORD = "";
                             finish = false;
                         }
                     } catch (JSONException e) {

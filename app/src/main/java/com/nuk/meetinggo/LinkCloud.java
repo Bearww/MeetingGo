@@ -38,6 +38,7 @@ public class LinkCloud {
 	public static String ADD_MEETING		= "add_meeting.php";
 	public static String JOIN_MEETING		= "device/employee/join_meeting.php";
 	public static String ADD_QUESTION		= "back_end/meeting/set_info/set_meeting_question.php";
+	public static String ADD_ANSWER 	 	= "back_end/meeting/set_info/set_meeting_answer.php";
 	public static String ADD_POLL			= "back_end/meeting/set_info/set_meeting_initiate_vote.php";
 	public static String ADD_POLL_OPTION 	= "back_end/meeting/set_info/set_meeting_voting_option.php";
 	public static String POLL				= "back_end/meeting/set_info/set_meeting_vote.php";
@@ -48,7 +49,7 @@ public class LinkCloud {
 
 	//---------------------------------------------------------------------------------------------------------------------//
 
-	//private final static String DEFAULT_SERVER_IP = "192.168.0.101";
+	//private final static String DEFAULT_SERVER_IP = "192.168.0.104";
 	private final static String DEFAULT_SERVER_IP = "192.168.137.1";
 	public static String SERVER_IP = DEFAULT_SERVER_IP;
 	//private static String DEFAULT_WEB_LINK = "http://169.254.156.204/cloud/meeting_cloud/";
@@ -120,10 +121,10 @@ public class LinkCloud {
 		url = BASIC_WEB_LINK + url;
 		DefaultHttpClient client = new DefaultHttpClient();
 		HttpPost post = new HttpPost(url);
-		Log.d("[LC]URL", url);
+		Log.i("[LC]URL", url);
 
 		ArrayList<NameValuePair> post_form = new ArrayList<NameValuePair>();
-		for(Map.Entry<String, String> entry:form_data.entrySet()) {
+		for(Map.Entry<String, String> entry : form_data.entrySet()) {
 			if(!entry.getKey().contains("post_link")) {
 				post_form.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
 				//Log.d("[LC]q", entry.getKey() + " " + entry.getValue());

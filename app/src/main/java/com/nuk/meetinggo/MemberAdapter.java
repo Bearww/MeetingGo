@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
+import android.support.v4.content.ContextCompat;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,16 +25,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import static com.nuk.meetinggo.DataUtils.MEMBER_COLOUR;
 import static com.nuk.meetinggo.DataUtils.MEMBER_ID;
 import static com.nuk.meetinggo.DataUtils.MEMBER_NAME;
+import static com.nuk.meetinggo.DataUtils.MEMBER_ONLINE;
+import static com.nuk.meetinggo.MeetingActivity.controlViewVisibility;
 import static com.nuk.meetinggo.MeetingInfo.getControllable;
 import static com.nuk.meetinggo.MeetingInfo.isController;
 import static com.nuk.meetinggo.MeetingInfo.isPresenter;
 import static com.nuk.meetinggo.MemberFragment.checkedArray;
 import static com.nuk.meetinggo.MemberFragment.controlActive;
 import static com.nuk.meetinggo.MemberFragment.deleteActive;
-import static com.nuk.meetinggo.MeetingActivity.controlViewVisibility;
 
 /**
  * Adapter class for custom members ListView
@@ -110,13 +111,19 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
             String id = context.getString(R.string.member_id);
             String name = context.getString(R.string.member_name);
             String colour = String.valueOf(context.getResources().getColor(R.color.white));
+            int online = 0;
             int fontSize = 18;
 
             try {
                 // Get memberObject data and store in variables
                 id = memberObject.getString(MEMBER_ID);
                 name = memberObject.getString(MEMBER_NAME);
-                colour = memberObject.getString(MEMBER_COLOUR);
+
+                if (memberObject.has(MEMBER_ONLINE))
+                    online = memberObject.getInt(MEMBER_ONLINE);
+
+                if (online > 0)
+                    colour = String.valueOf(ContextCompat.getColor(context, R.color.green));
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -166,13 +173,17 @@ public class MemberAdapter extends BaseAdapter implements ListAdapter {
             // If current member is selected for deletion -> highlight
             if (checkedArray.contains(position)) {
                 ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(context.getResources().getColor(R.color.theme_primary));
+                        .setColor(ContextCompat.getColor(context, R.color.theme_primary));
             }
 
             // If current member is not selected -> set background colour to normal
             else {
-                ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
-                        .setColor(Color.parseColor(colour));
+                if (colour.contains("#"))
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Color.parseColor(colour));
+                else
+                    ((GradientDrawable) roundedCard.findDrawableByLayerId(R.id.card))
+                            .setColor(Integer.parseInt(colour));
             }
 
             // Set member background style to rounded card

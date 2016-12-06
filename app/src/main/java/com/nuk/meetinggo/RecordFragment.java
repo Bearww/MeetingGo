@@ -37,15 +37,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
 import static com.nuk.meetinggo.DataUtils.NEW_RECORD_REQUEST;
 import static com.nuk.meetinggo.DataUtils.RECORDS_FILE_NAME;
 import static com.nuk.meetinggo.DataUtils.RECORD_BODY;
 import static com.nuk.meetinggo.DataUtils.RECORD_FAVOURED;
+import static com.nuk.meetinggo.DataUtils.RECORD_ID;
 import static com.nuk.meetinggo.DataUtils.RECORD_REFERENCE;
 import static com.nuk.meetinggo.DataUtils.RECORD_TITLE;
+import static com.nuk.meetinggo.DataUtils.RECORD_TOPIC;
 import static com.nuk.meetinggo.DataUtils.deleteRecords;
 import static com.nuk.meetinggo.DataUtils.retrieveData;
 import static com.nuk.meetinggo.DataUtils.saveData;
+import static com.nuk.meetinggo.LinkCloud.CLOUD_UPDATE;
 import static com.nuk.meetinggo.MeetingInfo.meetingID;
 import static com.nuk.meetinggo.RemoteActivity.topicBody;
 
@@ -91,10 +95,6 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Get record file from cloud
-        linkTask = new LinkCloudTask(GET_RECORDS, "");
-        linkTask.execute((Void) null);
-
         // Initialize local file path and backup file path
         localPath = new File(getContext().getFilesDir() + "/" + meetingID + RECORDS_FILE_NAME);
 
@@ -105,8 +105,8 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
         JSONArray tempRecords = retrieveData(localPath);
 
         // If not null -> equal main records to retrieved records
-        if (tempRecords != null)
-            records = tempRecords;
+        //if (tempRecords != null)
+        //    records = tempRecords;
 
         mReceiver = new DetachableResultReceiver(new Handler());
         mReceiver.setReceiver(this);
@@ -118,7 +118,7 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.beginList);
+        listView = (ListView) view.findViewById(R.id.listView);
         bodyView = (TextView) view.findViewById(R.id.bodyView);
         newRecord = (ImageButton) view.findViewById(R.id.newRecord);
         noRecords = (TextView) view.findViewById(R.id.noRecords);
@@ -165,7 +165,7 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
                                  int totalItemCount) {}
         });
 
-        if (MeetingInfo.getControllable(MemberInfo.memberName))
+        if (MeetingInfo.getControllable(MemberInfo.memberID))
             newRecord.setVisibility(View.VISIBLE);
         else
             newRecord.setVisibility(View.INVISIBLE);
@@ -386,10 +386,11 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
 
                             // If save successful -> toast successfully deleted
                             if (saveSuccessful) {
-                                Toast toast = Toast.makeText(getContext(),
-                                        getResources().getString(R.string.toast_deleted),
-                                        Toast.LENGTH_SHORT);
-                                toast.show();
+                                Log.i("[RF]", getResources().getString(R.string.toast_deleted));
+                                //Toast toast = Toast.makeText(getContext(),
+                                //        getResources().getString(R.string.toast_deleted),
+                                //        Toast.LENGTH_SHORT);
+                                //toast.show();
                             }
 
                             // Smooth scroll to top
@@ -654,7 +655,7 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
             if (!record.equals(newRecord.getString(RECORD_BODY))) {
                 newRecord.put(RECORD_BODY, record);
                 records.put(position, newRecord);
-                adapter.notifyDataSetChanged();;
+                adapter.notifyDataSetChanged();
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -676,6 +677,12 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
             // If search was active -> call 'searchEnded' method
             if (searchActive && searchMenu != null)
                 searchMenu.collapseActionView();
+
+            if (resultData != null) {
+                Log.i("[RF]", "do something");
+                linkTask = new LinkCloudTask(requestCode, resultCode, resultData);
+                linkTask.execute((Void) null);
+            }
         }
     }
 
@@ -690,47 +697,121 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
      */
     public class LinkCloudTask extends AsyncTask<Void, Void, Boolean> {
 
-        private final String URL_RECORDS = LinkCloud.DOC_INFO + MeetingInfo.meetingID;
-
         private int requestCode;
+        private int resultCode;
+        private Bundle resultData;
         private String mRecord;
 
         private Boolean mLinkSuccess;
         private String mLinkData;
+
+        private final String CONTENT_OBJECT = "obj_meeting_minutes";
+        private final String CONTENT_TITLE = "head_meeting_minutes";
+        private final String CONTENT_ID = "meeting_minutes_id";
+        private final String CONTENT_TOPIC = "topic_id";
 
         LinkCloudTask(int request, String record) {
             requestCode = request;
             mRecord = record;
         }
 
+        LinkCloudTask(int request, int result, Bundle data) {
+            requestCode = request;
+            resultCode = result;
+            resultData = data;
+        }
+
         @Override
         protected Boolean doInBackground(Void... params) {
+            try {
+                if (requestCode == CLOUD_UPDATE) {
+                    JSONObject request = new JSONObject(resultData.getString(CLOUD_UPDATE_CODE));
+    
+                    JSONObject info = LinkCloud.getContent(request);
+                    Log.i("[RF]", "info:" + info.toString());
+    
+                    JSONObject object = null;
+    
+                    if (info.has(CONTENT_OBJECT)) {
+                        object = info.getJSONObject(CONTENT_OBJECT);
 
-            if (requestCode == GET_RECORDS) {
-                try {
-                    JSONObject object = LinkCloud.request(URL_RECORDS);
-                    Map<String, String> links = LinkCloud.getLink(object);
+                        JSONArray title = null;
+                        JSONArray id = null;
+                        JSONArray topic = null;
+                        if (object.has(CONTENT_TITLE))
+                            title = object.getJSONArray(CONTENT_TITLE);
+                        else
+                            Log.i("[RF]", "Fail to fetch field " + CONTENT_TITLE);
 
-                    for (String key : links.keySet())
-                        Log.i("[DF]", key + " " + links.get(key));
+                        if (object.has(CONTENT_ID))
+                            id = object.getJSONArray(CONTENT_ID);
+                        else
+                            Log.i("[RF]", "Fail to fetch field " + CONTENT_ID);
 
-                    // TODO i don't know how to get
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                        if (object.has(CONTENT_TOPIC))
+                            topic = object.getJSONArray(CONTENT_TOPIC);
+                        else
+                            Log.i("[RF]", "Fail to fetch field " + CONTENT_TOPIC);
+
+                        if (title != null && id != null && topic != null) {
+                            if (title.length() == id.length()) {
+                                // Update records, check record id is either existed or not
+                                // Yes -> update data, no -> add new record
+                                for(int i = 0; i < id.length(); i++) {
+                                    int position = -1;
+                                    for(int j = 0; j < records.length(); j++) {
+                                        if(id.getString(i).equals(records.getJSONObject(j).getString(RECORD_ID))
+                                                && topic.getString(i).equals(records.getJSONObject(j).getString(RECORD_TOPIC))) {
+                                            position = j;
+                                            break;
+                                        }
+                                    }
+
+                                    JSONObject record = null;
+                                    // Add new record
+                                    if (position < 0) {
+                                        record = new JSONObject();
+
+                                        // TODO add body
+                                        record.put(RECORD_ID, id.getString(i));
+                                        record.put(RECORD_TITLE, title.getString(i));
+                                        record.put(RECORD_TOPIC, topic.getString(i));
+                                        record.put(RECORD_BODY, "");
+                                        record.put(RECORD_FAVOURED, false);
+
+                                        records.put(record);
+                                    }
+                                    // Update existed record
+                                    else {
+                                        record = records.getJSONObject(position);
+                                        
+                                        record.put(RECORD_TITLE, title.getString(i));
+
+                                        records.put(position, record);
+                                    }
+                                }
+
+                                Thread.sleep(2000);
+
+                                return true;
+                            }
+                            else
+                                Log.i("[RF]", "Field length aren't the same in array");
+                        }
+                        else
+                            Log.i("[RF]", "Loading object content error");
+                    }
+                    else
+                        Log.i("[RF]", "No content key " + CONTENT_OBJECT);
                 }
-                return true;
-            }
-            else {
-                try {
+                else {
                     // Link to cloud
                     Log.i("[RF]", "create record form");
                     Map<String, String> form = new HashMap<>();
 
                     // Add new record to form
                     form.put("topic_id", String.valueOf(MeetingInfo.topicID));
-                    form.put("record", mRecord);
+                    form.put("meeting_minutes", mRecord);
 
                     // Save new record
                     if (requestCode == NEW_RECORD_REQUEST) {
@@ -741,15 +822,18 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
                     }
                     // Update existed record
                     else {
-                        // Update database
-                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_RECORD);
-                        if (mLinkSuccess = LinkCloud.hasData())
-                            return true;
+                        // TODO Update database
+                        //mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_RECORD);
+                        //if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
-
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
             return false;
@@ -760,15 +844,36 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
             linkTask = null;
 
             if(success) {
-                if (requestCode == NEW_RECORD_REQUEST) {
+                if (requestCode == CLOUD_UPDATE) {
+                    // Update record list view
+                    adapter.notifyDataSetChanged();
+
+                    Boolean saveSuccessful = saveData(localPath, records);
+
+                    if (saveSuccessful) {
+                        Log.i("[RF]", getResources().getString(R.string.toast_record_saved));
+                        //Toast toast = Toast.makeText(getContext(),
+                        //        getResources().getString(R.string.toast_record_saved),
+                        //        Toast.LENGTH_SHORT);
+                        //toast.show();
+                    }
+
+                    if (records.length() == 0)
+                        noRecords.setVisibility(View.VISIBLE);
+                    else
+                        noRecords.setVisibility(View.INVISIBLE);
+                }
+
+                // If new record was saved
+                else if (requestCode == NEW_RECORD_REQUEST) {
                     Log.i("[RF]", "New record");
                     JSONObject newRecordObject = null;
                     
                     try {
                         // Add new record to array
                         newRecordObject = new JSONObject();
-                        newRecordObject.put(RECORD_TITLE, "");
-                        newRecordObject.put(RECORD_BODY, mRecord);
+                        newRecordObject.put(RECORD_TITLE, mRecord);
+                        newRecordObject.put(RECORD_BODY, "");
                         newRecordObject.put(RECORD_REFERENCE, "");
                         newRecordObject.put(RECORD_FAVOURED, false);
                         
@@ -784,10 +889,11 @@ public class RecordFragment extends Fragment implements AdapterView.OnItemClickL
                         Boolean saveSuccessful = saveData(localPath, records);
 
                         if (saveSuccessful) {
-                            Toast toast = Toast.makeText(getContext(),
-                                    getResources().getString(R.string.toast_new_record),
-                                    Toast.LENGTH_SHORT);
-                            toast.show();
+                            Log.i("[RF]", getResources().getString(R.string.toast_new_record));
+                            //Toast toast = Toast.makeText(getContext(),
+                            //        getResources().getString(R.string.toast_new_record),
+                            //        Toast.LENGTH_SHORT);
+                            //toast.show();
                         }
 
                         // If no records -> show 'Press + to add new record' text, invisible otherwise

@@ -40,7 +40,9 @@ import java.util.Map;
 import static com.nuk.meetinggo.ColorPicker.ColorPickerSwatch.OnColorSelectedListener;
 import static com.nuk.meetinggo.DataUtils.NEW_POLL_REQUEST;
 import static com.nuk.meetinggo.DataUtils.OPTION_ARRAY;
+import static com.nuk.meetinggo.DataUtils.OPTION_CONTENT;
 import static com.nuk.meetinggo.DataUtils.OPTION_ID;
+import static com.nuk.meetinggo.DataUtils.OPTION_VOTES;
 import static com.nuk.meetinggo.DataUtils.POLL_BODY;
 import static com.nuk.meetinggo.DataUtils.POLL_CHECK;
 import static com.nuk.meetinggo.DataUtils.POLL_COLOUR;
@@ -69,7 +71,7 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
     public static ArrayList<Integer> checkedArray = new ArrayList<Integer>();
     public static boolean choseActive = false; // True if chose mode is active, false otherwise
     public static boolean multiChoseEnable = false; // True if multiChose is enable, false otherwise
-    public static boolean pollActive = true; // True if poll mode is active, false otherwise
+    public static boolean pollActive = false; // True if poll mode is active, false otherwise
 
     private InputMethodManager imm;
     private Bundle bundle;
@@ -129,7 +131,7 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
         titleText = (TextView) view.findViewById(R.id.titleText);
         bodyText = (TextView) view.findViewById(R.id.bodyText);
         sendPoll = (ImageButton) view.findViewById(R.id.sendPoll);
-        listView = (ListView) view.findViewById(R.id.beginList);
+        listView = (ListView) view.findViewById(R.id.listView);
         relativeLayoutView = (RelativeLayout) view.findViewById(R.id.relativeLayoutView);
 
         imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
@@ -159,19 +161,18 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
                     else
                         pollActive = false;
 
-                    if (bundle.containsKey(OPTION_ARRAY)) {
+                    if (bundle.getString(OPTION_ARRAY) != null)
                         options = new JSONArray(bundle.getString(OPTION_ARRAY));
-                        adapter = new OptionAdapter(getContext(), options);
-                        listView.setAdapter(adapter);
-                    }
+                    else
+                        options = new JSONArray();
+
+                    adapter = new OptionAdapter(getContext(), options);
+                    listView.setAdapter(adapter);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
-
-            // Set background colour to poll colour
-            relativeLayoutView.setBackgroundColor(Color.parseColor(colour));
 
             // Get receiver
             receiver = bundle.getParcelable(POLL_RECEIVER);
@@ -553,6 +554,7 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
                     try {
                         JSONObject option = options.getJSONObject(i);
                         form.put(CONTENT_OPTION, option.getString(OPTION_ID));
+                        Log.i("[VPF]", option.getString(OPTION_CONTENT));
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -561,8 +563,8 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
                 // Save new poll
                 try {
                     mLinkData = LinkCloud.submitFormPost(form, LinkCloud.POLL);
-                    //if (mLinkSuccess = LinkCloud.hasData())
-                    return true;
+                    if (mLinkSuccess = LinkCloud.hasData())
+                        return true;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -578,7 +580,18 @@ public class ViewPollFragment extends Fragment implements Toolbar.OnMenuItemClic
                 if (mRequest == SEND_MESSAGE) {
                     // TODO change to display poll result
                     Toast.makeText(getContext(), "Poll success", Toast.LENGTH_LONG).show();
-                    pollActive = false;
+
+                    for (Integer i : checkedArray) {
+                        try {
+                            JSONObject object = options.getJSONObject(i);
+                            object.put(OPTION_VOTES, object.getInt(OPTION_VOTES) + 1);
+                            options.put(i, object);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    pollActive = true;
                     adapter.notifyDataSetChanged();
 
                     if (actionMode != null)

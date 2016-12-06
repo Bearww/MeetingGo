@@ -166,9 +166,10 @@
     <string name="toast_question_body_hidden">Question body will now be hidden in questions list</string>
     <string name="toast_question_body_showing">Question body will now be shown in questions list</string>
     <string name="record_title">Title</string>
-    <string name="record_body">Document</string>
+    <string name="record_body">Record</string>
     <string name="record_reference">Reference</string>
     <string name="toast_new_record">Record created</string>
+    <string name="toast_record_saved">Record saved</string>
     <string name="poll_option">Press to add option</string>
     <string name="option_body">Option</string>
     <string name="title_activity_settings">Settings</string>

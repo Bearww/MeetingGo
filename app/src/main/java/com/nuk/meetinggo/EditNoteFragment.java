@@ -66,7 +66,7 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
     private String[] fontSizeNameArr; // Font size names string array
 
     // Defaults
-    private String noteID = ""; // empty id default
+    private int noteID = 0; // empty id default
     private String colour = "#FFFFFF"; // white default
     private int fontSize = 18; // Medium default
     private Boolean hideBody = false;
@@ -145,7 +145,7 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
                 colour = bundle.getString(NOTE_COLOUR);
                 fontSize = bundle.getInt(NOTE_FONT_SIZE);
                 hideBody = bundle.getBoolean(NOTE_HIDE_BODY);
-                noteID = bundle.getString(NOTE_ID);
+                noteID = bundle.getInt(NOTE_ID);
 
                 titleEdit.setText(bundle.getString(NOTE_TITLE));
                 bodyEdit.setText(bundle.getString(NOTE_BODY));
@@ -486,12 +486,12 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
      */
     public class LinkCloudTask extends AsyncTask<Void, Void, Boolean> {
 
-        String mID = "";
+        int mID = 0;
         String mLink = "";
         String mInfo = "";
 
-        LinkCloudTask(String id) {
-            if (!TextUtils.isEmpty(id)) {
+        LinkCloudTask(int id) {
+            if (id > 0) {
                 mID = id;
                 mLink = GET_TOPIC_BODY;
             }
@@ -503,7 +503,7 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
             if (!TextUtils.isEmpty(mLink)) {
                 Map<String, String> form = new HashMap<>();
 
-                form.put(CONTENT_TOPIC_ID, mID);
+                form.put(CONTENT_TOPIC_ID, String.valueOf(mID));
 
                 try {
                     Log.i("[ENF]", "Link note body " + mLink);
@@ -523,6 +523,7 @@ public class EditNoteFragment extends Fragment implements Toolbar.OnMenuItemClic
                     else
                         Log.i("[ENF]", "Fail to get note body");
                 } catch (IOException e) {
+                    Log.e("[ENF]", e.toString());
                     e.printStackTrace();
                 } catch (JSONException e) {
                     e.printStackTrace();

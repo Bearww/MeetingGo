@@ -21,7 +21,6 @@ import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -692,10 +691,11 @@ public class PastMeetingFragment extends Fragment implements AdapterView.OnItemC
                     Boolean saveSuccessful = saveData(localPath, meetings);
 
                     if (saveSuccessful) {
-                        Toast toast = Toast.makeText(getContext(),
-                                getResources().getString(R.string.toast_new_meeting),
-                                Toast.LENGTH_SHORT);
-                        toast.show();
+                        Log.i("[PMF]", getResources().getString(R.string.toast_new_meeting));
+                        //Toast toast = Toast.makeText(getContext(),
+                        //        getResources().getString(R.string.toast_new_meeting),
+                        //        Toast.LENGTH_SHORT);
+                        //toast.show();
                     }
 
                     if (meetings.length() == 0)

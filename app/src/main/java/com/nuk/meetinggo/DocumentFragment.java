@@ -118,8 +118,8 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         JSONArray tempDocuments = retrieveData(localPath);
 
         // If not null -> equal main documents to retrieved documents
-        if (tempDocuments != null)
-            documents = tempDocuments;
+        //if (tempDocuments != null)
+        //    documents = tempDocuments;
 
         // Filter topic id from documents
         filteredDocuments = filterDocument();
@@ -134,7 +134,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.beginList);
+        listView = (ListView) view.findViewById(R.id.listView);
         newDocument = (ImageButton) view.findViewById(R.id.newDocument);
         noDocuments = (TextView) view.findViewById(R.id.noDocuments);
 
@@ -514,10 +514,11 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
 
                             // If save successful -> toast successfully deleted
                             if (saveSuccessful) {
-                                Toast toast = Toast.makeText(getContext(),
-                                        getResources().getString(R.string.toast_deleted),
-                                        Toast.LENGTH_SHORT);
-                                toast.show();
+                                Log.i("[DF]", getResources().getString(R.string.toast_deleted));
+                                //Toast toast = Toast.makeText(getContext(),
+                                //        getResources().getString(R.string.toast_deleted),
+                                //        Toast.LENGTH_SHORT);
+                                //toast.show();
                             }
 
                             // Smooth scroll to top
@@ -686,6 +687,11 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
         intent.setDataAndType(data, type);
 
         startActivity(intent);
+    }
+
+    protected Boolean checkFileExist(String fileName) {
+        File toFile = new File(localDirectory, fileName);
+        return toFile.exists();
     }
 
     /**
@@ -894,7 +900,7 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                                         document.put(DOCUMENT_TITLE, title.getString(i));
                                         document.put(DOCUMENT_LINK, link.getString(i));
                                         document.put(DOCUMENT_VIEW, view.getString(i));
-                                        document.put(DOCUMENT_DOWNLOADED, false);
+                                        document.put(DOCUMENT_DOWNLOADED, checkFileExist(title.getString(i)));
                                         document.put(DOCUMENT_TOPIC, "0");
                                         document.put(DOCUMENT_FAVOURED, false);
 
@@ -944,15 +950,17 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
             if(success) {
                 if (requestCode == CLOUD_UPDATE) {
                     // Update document list view
+                    filterDocument();
                     adapter.notifyDataSetChanged();
 
                     Boolean saveSuccessful = saveData(localPath, documents);
 
                     if (saveSuccessful) {
-                        Toast toast = Toast.makeText(getContext(),
-                                getResources().getString(R.string.toast_new_document),
-                                Toast.LENGTH_SHORT);
-                        toast.show();
+                        Log.i("[DF]", getResources().getString(R.string.toast_new_document));
+                        //Toast toast = Toast.makeText(getContext(),
+                        //        getResources().getString(R.string.toast_new_document),
+                        //        Toast.LENGTH_SHORT);
+                        //toast.show();
                     }
 
                     // If no documents -> show 'Press + to add new document text, invisible otherwise
@@ -1112,10 +1120,11 @@ public class DocumentFragment extends Fragment implements AdapterView.OnItemClic
                 Boolean saveSuccessful = saveData(localPath, documents);
 
                 if (saveSuccessful) {
-                    Toast toast = Toast.makeText(getContext(),
-                            getResources().getString(R.string.toast_new_document),
-                            Toast.LENGTH_SHORT);
-                    toast.show();
+                    Log.i("[DF]", getResources().getString(R.string.toast_new_document));
+                    //Toast toast = Toast.makeText(getContext(),
+                    //        getResources().getString(R.string.toast_new_document),
+                    //        Toast.LENGTH_SHORT);
+                    //toast.show();
                 }
                 openFile(mFileDirectory, mFileName);
             }

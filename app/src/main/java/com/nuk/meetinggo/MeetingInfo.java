@@ -20,7 +20,7 @@ public class MeetingInfo {
     public static String meetingTitle = "";
     public static String meetingDate = "";
     public static String meetingTime = "";
-    public static String meetingPosition = "";
+    public static String meetingLocation = "";
 
     /********************************************************/
 
@@ -56,7 +56,7 @@ public class MeetingInfo {
     public final static String CONTENT_POLL = "get_voting_result";
     public static String GET_MEETING_POLL = "";
 
-    public final static String CONTENT_RECORD = "get_voting_result";
+    public final static String CONTENT_RECORD = "get_meeting_minutes";
     public static String GET_MEETING_RECORD = "";
 
     public final static String CONTENT_TOPIC_BODY = "get_topic_content";

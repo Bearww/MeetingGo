@@ -115,8 +115,8 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
         JSONArray tempPolls = retrieveData(localPath);
 
         // If not null -> equal main polls to retrieved polls
-        if (tempPolls != null)
-            polls = tempPolls;
+        //if (tempPolls != null)
+        //    polls = tempPolls;
 
         // Filter topic id from polls
         filteredPolls = filterPoll();
@@ -133,7 +133,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.beginList);
+        listView = (ListView) view.findViewById(R.id.listView);
         newPoll = (ImageButton) view.findViewById(R.id.newPoll);
         noPolls = (TextView) view.findViewById(R.id.noPolls);
 
@@ -332,10 +332,11 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                                 Boolean saveSuccessful = saveData(localPath, polls);
 
                                 if (saveSuccessful) {
-                                    Toast toast = Toast.makeText(getContext(),
-                                            getResources().getString(R.string.toast_new_poll),
-                                            Toast.LENGTH_SHORT);
-                                    toast.show();
+                                    Log.i("[PF]", getResources().getString(R.string.toast_new_poll));
+                                    //Toast toast = Toast.makeText(getContext(),
+                                    //        getResources().getString(R.string.toast_new_poll),
+                                    //        Toast.LENGTH_SHORT);
+                                    //toast.show();
                                 }
 
                                 // If no polls -> show 'Press + to add new poll' text, invisible otherwise
@@ -565,10 +566,11 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                             // If save successful -> toast successfully deleted
                             if (saveSuccessful) {
-                                Toast toast = Toast.makeText(getContext(),
-                                        getResources().getString(R.string.toast_deleted),
-                                        Toast.LENGTH_SHORT);
-                                toast.show();
+                                Log.i("[PF]", getResources().getString(R.string.toast_deleted));
+                                //Toast toast = Toast.makeText(getContext(),
+                                //        getResources().getString(R.string.toast_deleted),
+                                //        Toast.LENGTH_SHORT);
+                                //toast.show();
                             }
 
                             // Smooth scroll to top
@@ -1048,6 +1050,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                         //if (mLinkSuccess = LinkCloud.hasData())
 
                         String id = LinkCloud.filterLink(mLinkData);
+                        Log.i("[PF]", id);
                         JSONArray options = new JSONArray(resultData.getString(OPTION_ARRAY));
 
                         form = new HashMap<>();
@@ -1055,7 +1058,9 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                         for (int i = 0; i < options.length(); i++) {
                             form.put("option", options.getJSONObject(i).getString(OPTION_CONTENT));
+
                             LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL_OPTION);
+                            Thread.sleep(1000);
                         }
                         return true;
                     }
@@ -1063,7 +1068,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                     else {
                         // TODO change add to update poll in database
                         // Update database
-                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
+                        //mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_POLL);
                         //if (mLinkSuccess = LinkCloud.hasData())
                         return true;
                     }
@@ -1085,15 +1090,17 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
             if(success) {
                 if (requestCode == CLOUD_UPDATE) {
                     // Update poll list view
+                    filterPoll();
                     adapter.notifyDataSetChanged();
 
                     Boolean saveSuccessful = saveData(localPath, polls);
 
                     if (saveSuccessful) {
-                        Toast toast = Toast.makeText(getContext(),
-                                getResources().getString(R.string.toast_new_poll),
-                                Toast.LENGTH_SHORT);
-                        toast.show();
+                        Log.i("[PF]", getResources().getString(R.string.toast_new_poll));
+                        //Toast toast = Toast.makeText(getContext(),
+                        //        getResources().getString(R.string.toast_new_poll),
+                        //        Toast.LENGTH_SHORT);
+                        //toast.show();
                     }
 
                     if (filteredPolls.length() == 0)
@@ -1130,10 +1137,11 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
                         Boolean saveSuccessful = saveData(localPath, polls);
 
                         if (saveSuccessful) {
-                            Toast toast = Toast.makeText(getContext(),
-                                    getResources().getString(R.string.toast_new_poll),
-                                    Toast.LENGTH_SHORT);
-                            toast.show();
+                            Log.i("[PF]", getResources().getString(R.string.toast_new_poll));
+                            //Toast toast = Toast.makeText(getContext(),
+                            //        getResources().getString(R.string.toast_new_poll),
+                            //        Toast.LENGTH_SHORT);
+                            //toast.show();
                         }
 
                         // If no polls -> show 'Press + to add new poll' text, invisible otherwise
@@ -1224,7 +1232,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                                 option.put(OPTION_ID, id.getString(i));
                                 option.put(OPTION_CONTENT, title.getString(i));
-                                option.put(OPTION_VOTES, votes.getString(i));
+                                option.put(OPTION_VOTES, votes.getInt(i));
 
                                 options.put(option);
                             }
@@ -1234,7 +1242,7 @@ public class PollFragment extends Fragment implements AdapterView.OnItemClickLis
 
                                 option.put(OPTION_ID, id.getString(i));
                                 option.put(OPTION_CONTENT, title.getString(i));
-                                option.put(OPTION_VOTES, votes.getString(i));
+                                option.put(OPTION_VOTES, votes.getInt(i));
 
                                 options.put(position, option);
                             }

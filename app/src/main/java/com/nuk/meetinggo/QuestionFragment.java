@@ -39,6 +39,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.nuk.meetinggo.DataUtils.ANSWER_ARRAY;
+import static com.nuk.meetinggo.DataUtils.ANSWER_CONTENT;
+import static com.nuk.meetinggo.DataUtils.ANSWER_OWNER;
 import static com.nuk.meetinggo.DataUtils.CLOUD_UPDATE_CODE;
 import static com.nuk.meetinggo.DataUtils.NEW_QUESTION_REQUEST;
 import static com.nuk.meetinggo.DataUtils.QUESTIONS_FILE_NAME;
@@ -108,8 +110,8 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
         JSONArray tempQuestions = retrieveData(localPath);
 
         // If not null -> equal main questions to retrieved questions
-        if (tempQuestions != null)
-            questions = tempQuestions;
+        //if (tempQuestions != null)
+        //    questions = tempQuestions;
 
         // Filter topic id from questions
         filteredQuestions = filterQuestion();
@@ -124,7 +126,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
-        listView = (ListView) view.findViewById(R.id.beginList);
+        listView = (ListView) view.findViewById(R.id.listView);
         newQuestion = (ImageButton) view.findViewById(R.id.newQuestion);
         noQuestions = (TextView) view.findViewById(R.id.noQuestions);
 
@@ -371,6 +373,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
             try {
                 // Package selected question content and send to ViewQuestionFragment
                 args.putString(QUESTION_ID, questions.getJSONObject(newPosition).getString(QUESTION_ID));
+                args.putString(QUESTION_TOPIC, questions.getJSONObject(newPosition).getString(QUESTION_TOPIC));
                 args.putString(QUESTION_TITLE, questions.getJSONObject(newPosition).getString(QUESTION_TITLE));
                 args.putString(QUESTION_BODY, questions.getJSONObject(newPosition).getString(QUESTION_BODY));
                 args.putString(QUESTION_COLOUR, questions.getJSONObject(newPosition).getString(QUESTION_COLOUR));
@@ -389,6 +392,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
             try {
                 // Package selected question content and send to ViewQuestionFragment
                 args.putString(QUESTION_ID, questions.getJSONObject(position).getString(QUESTION_ID));
+                args.putString(QUESTION_TOPIC, questions.getJSONObject(position).getString(QUESTION_TOPIC));
                 args.putString(QUESTION_TITLE, questions.getJSONObject(position).getString(QUESTION_TITLE));
                 args.putString(QUESTION_BODY, questions.getJSONObject(position).getString(QUESTION_BODY));
                 args.putString(QUESTION_COLOUR, questions.getJSONObject(position).getString(QUESTION_COLOUR));
@@ -487,10 +491,11 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
                             // If save successful -> toast successfully deleted
                             if (saveSuccessful) {
-                                Toast toast = Toast.makeText(getContext(),
-                                        getResources().getString(R.string.toast_deleted),
-                                        Toast.LENGTH_SHORT);
-                                toast.show();
+                                Log.i("[QF]", getResources().getString(R.string.toast_deleted));
+                                //Toast toast = Toast.makeText(getContext(),
+                                //        getResources().getString(R.string.toast_deleted),
+                                //        Toast.LENGTH_SHORT);
+                                //toast.show();
                             }
 
                             // Smooth scroll to top
@@ -875,14 +880,18 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                                         // TODO add body
                                         question.put(QUESTION_ID, id.getString(i));
                                         question.put(QUESTION_TITLE, title.getString(i));
-                                        question.put(QUESTION_TOPIC, topic.getInt(i));
+                                        question.put(QUESTION_TOPIC, topic.getString(i));
                                         question.put(QUESTION_BODY, "");
                                         question.put(QUESTION_COLOUR, "#FFFFFF");
                                         question.put(QUESTION_FAVOURED, false);
                                         question.put(QUESTION_FONT_SIZE, 18);
 
-                                        if (!TextUtils.isEmpty(answer.getString(i)))
-                                            questionAnswer.put(answer.getString(i));
+                                        if (!TextUtils.isEmpty(answer.getString(i))) {
+                                            JSONObject answerObject = new JSONObject();
+                                            answerObject.put(ANSWER_CONTENT, answer.getString(i));
+                                            answerObject.put(ANSWER_OWNER, "");
+                                            questionAnswer.put(answerObject);
+                                        }
                                         question.put(ANSWER_ARRAY, questionAnswer);
 
                                         questions.put(question);
@@ -894,14 +903,15 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                                         questionAnswer = question.getJSONArray(ANSWER_ARRAY);
 
                                         // Update first message
-                                        if (!TextUtils.isEmpty(answer.getString(i)))
-                                            if (questionAnswer.length() > 0)
-                                                questionAnswer.put(0, answer.getString(i));
-                                            else
-                                                questionAnswer.put(answer.getString(i));
-
-                                        question.put(QUESTION_TITLE, title.getString(i));
+                                        if (!TextUtils.isEmpty(answer.getString(i))) {
+                                            JSONObject answerObject = new JSONObject();
+                                            answerObject.put(ANSWER_CONTENT, answer.getString(i));
+                                            answerObject.put(ANSWER_OWNER, "");
+                                            if (questionAnswer.length() > 0) questionAnswer.put(0, answerObject);
+                                            else questionAnswer.put(answerObject);
+                                        }
                                         question.put(ANSWER_ARRAY, questionAnswer);
+                                        question.put(QUESTION_TITLE, title.getString(i));
 
                                         questions.put(position, question);
 
@@ -928,12 +938,12 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         Log.i("[QF]", "No content key " + CONTENT_OBJECT);
                 }
                 else {
-                    Log.i("[QF]", "create question form");
                     Map<String, String> form = new HashMap<>();
 
                     // Add new question to form
                     form.put("topic_id", String.valueOf(MeetingInfo.topicID));
                     form.put("question", resultData.getString(QUESTION_TITLE));
+                    Log.i("[QF]", "Question form " + form.toString());
 
                     // Save new question
                     if (requestCode == NEW_QUESTION_REQUEST) {
@@ -942,11 +952,11 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         if (mLinkSuccess = LinkCloud.hasData())
                             return true;
                     }
-                    // Update exsited question
+                    // Update existed question
                     else {
-                        // Update database
-                        mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_QUESTION);
-                        if (mLinkSuccess = LinkCloud.hasData())
+                        // TODO Update database
+                        //mLinkData = LinkCloud.submitFormPost(form, LinkCloud.ADD_QUESTION);
+                        //if (mLinkSuccess = LinkCloud.hasData())
                             return true;
                     }
                 }
@@ -968,15 +978,17 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
             if(success) {
                 if (requestCode == CLOUD_UPDATE) {
                     // Update question list view
+                    filterQuestion();
                     adapter.notifyDataSetChanged();
 
                     Boolean saveSuccessful = saveData(localPath, questions);
 
                     if (saveSuccessful) {
-                        Toast toast = Toast.makeText(getContext(),
-                                getResources().getString(R.string.toast_question_saved),
-                                Toast.LENGTH_SHORT);
-                        toast.show();
+                        Log.i("[QF]", getResources().getString(R.string.toast_question_saved));
+                        //Toast toast = Toast.makeText(getContext(),
+                        //        getResources().getString(R.string.toast_question_saved),
+                        //        Toast.LENGTH_SHORT);
+                        //toast.show();
                     }
 
                     if (filteredQuestions.length() == 0)
@@ -1009,15 +1021,17 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
                     // If newQuestionObject not null -> save questions array to local file and notify adapter
                     if (newQuestionObject != null) {
+                        filterQuestion();
                         adapter.notifyDataSetChanged();
 
                         Boolean saveSuccessful = saveData(localPath, questions);
 
                         if (saveSuccessful) {
-                            Toast toast = Toast.makeText(getContext(),
-                                    getResources().getString(R.string.toast_new_question),
-                                    Toast.LENGTH_SHORT);
-                            toast.show();
+                            Log.i("[QF]", getResources().getString(R.string.toast_new_question));
+                            //Toast toast = Toast.makeText(getContext(),
+                            //        getResources().getString(R.string.toast_new_question),
+                            //        Toast.LENGTH_SHORT);
+                            //toast.show();
                         }
 
                         // If no questions -> show 'Press + to add new question' text, invisible otherwise
@@ -1039,7 +1053,7 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
                         newQuestionObject.put(QUESTION_BODY, resultData.getString(QUESTION_BODY));
                         newQuestionObject.put(QUESTION_COLOUR, resultData.getString(QUESTION_COLOUR));
                         newQuestionObject.put(QUESTION_FONT_SIZE, resultData.getInt(QUESTION_FONT_SIZE));
-                        newQuestionObject.put(ANSWER_ARRAY, resultData.getString(ANSWER_ARRAY));
+                        newQuestionObject.put(ANSWER_ARRAY, new JSONArray(resultData.getString(ANSWER_ARRAY)));
 
                         // Update question at position 'requestCode'
                         questions.put(realIndexesOfFilterResults.get(requestCode), newQuestionObject);
@@ -1051,16 +1065,16 @@ public class QuestionFragment extends Fragment implements AdapterView.OnItemClic
 
                     // If newQuestionObject not null -> save questions array to local file and notify adapter
                     if (newQuestionObject != null) {
-                        filterQuestion();
                         adapter.notifyDataSetChanged();
 
                         Boolean saveSuccessful = saveData(localPath, questions);
 
                         if (saveSuccessful) {
-                            Toast toast = Toast.makeText(getContext(),
-                                    getResources().getString(R.string.toast_question_saved),
-                                    Toast.LENGTH_SHORT);
-                            toast.show();
+                            Log.i("[QF]", getResources().getString(R.string.toast_question_saved));
+                            //Toast toast = Toast.makeText(getContext(),
+                            //        getResources().getString(R.string.toast_question_saved),
+                            //        Toast.LENGTH_SHORT);
+                            //toast.show();
                         }
 
                         // If no questions -> show 'Press + to add new question' text, invisible otherwise

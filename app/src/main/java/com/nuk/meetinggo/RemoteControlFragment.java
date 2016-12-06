@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -44,6 +45,8 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
+import static com.nuk.meetinggo.RemoteActivity.PICK_IMAGE_REQUEST;
+
 public class RemoteControlFragment extends Fragment implements View.OnTouchListener, View.OnKeyListener,
         Toolbar.OnMenuItemClickListener {
 
@@ -52,19 +55,22 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
     Toolbar toolbar;
     MenuItem linkMenu;
     RelativeLayout buttonLayout;
+    RelativeLayout selectLayout;
     Button leftButton;
     Button rightButton;
     //Button connectButton;
     Button keyboardButton;
+    Button selectButton;
     ImageView mousePad;
     View progressView;
     TextView noConnectionText;
     MenuItem shareMenu;
 
     private static int currentMode;
-    public static int NONE = -1;
-    public static int MODE_CONTROL = 1;
-    public static int MODE_SHARE = 2;
+    public final static int NONE = -1;
+    public final static int MODE_CONTROL = 1;
+    public final static int MODE_SHARE = 2;
+    public final static int MODE_IMAGE = 3;
     
     private Handler messageHandler;
     private ConnectServerTask connectServerTask;
@@ -84,6 +90,7 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
     private float initY = 0;
 
     private static float buttonLayoutBaseYCoordinate; // Base Y coordinate of button layout
+    private static float selectLayoutBaseYCoordinate; // Base Y coordinate of select layout
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -101,21 +108,27 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
 
         // Get reference of button layout
         buttonLayout = (RelativeLayout) view.findViewById(R.id.buttonLayout);
+        selectLayout = (RelativeLayout) view.findViewById(R.id.selectLayout);
 
         buttonLayoutBaseYCoordinate = buttonLayout.getY();
         buttonLayoutVisibility(false);
+
+        selectLayoutBaseYCoordinate = selectLayout.getY();
+        selectLayoutVisibility(false);
 
         // Get references of all buttons
         leftButton = (Button) view.findViewById(R.id.leftButton);
         rightButton = (Button) view.findViewById(R.id.rightButton);
         //connectButton = (Button) view.findViewById(R.id.connectButton);
         keyboardButton = (Button) view.findViewById(R.id.keyboardButton);
+        selectButton = (Button) view.findViewById(R.id.selectButton);
 
         // Get reference of progress bar
         progressView = view.findViewById(R.id.connectProgress);
 
         // Get reference of textview
         noConnectionText = (TextView) view.findViewById(R.id.noConnection);
+        noConnectionText.setVisibility(View.VISIBLE);
 
         // Init layout components
         toolbar = (Toolbar) view.findViewById(R.id.toolbarMain);
@@ -129,6 +142,25 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
             @Override
             public void onClick(View v) {
                 keyClickHandler(v);
+            }
+        });
+        selectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (Build.VERSION.SDK_INT < 19) {
+                    Intent intent = new Intent();
+                    // Show only images, no videos or anything else
+                    intent.setType("image/*");
+                    intent.setAction(Intent.ACTION_GET_CONTENT);
+                    // Always show the chooser (if there are multiple options available)
+                    getActivity().startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
+                }
+                else {
+                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("image/*");
+                    getActivity().startActivityForResult(intent, PICK_IMAGE_REQUEST);
+                }
             }
         });
 
@@ -198,6 +230,20 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
         } else {
             buttonLayout.animate().cancel();
             buttonLayout.animate().translationY(buttonLayoutBaseYCoordinate + 500);
+        }
+    }
+
+    /**
+     * Method to show and hide the button layout
+     * @param isVisible true to show tab, false to hide
+     */
+    public void selectLayoutVisibility(boolean isVisible) {
+        if (isVisible) {
+            selectLayout.animate().cancel();
+            selectLayout.animate().translationY(selectLayoutBaseYCoordinate);
+        } else {
+            selectLayout.animate().cancel();
+            selectLayout.animate().translationY(selectLayoutBaseYCoordinate + 500);
         }
     }
 
@@ -356,9 +402,18 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
     }
 
     public void setImage(final byte[] image) {
-        Bitmap map = BitmapFactory.decodeByteArray(image, 0, image.length);
+        if (currentMode == MODE_CONTROL || currentMode == MODE_SHARE) {
+            Bitmap map = BitmapFactory.decodeByteArray(image, 0, image.length);
 
-        mousePad.setImageBitmap(map);
+            mousePad.setImageBitmap(map);
+            mousePad.postInvalidate();
+        }
+    }
+
+    public void setImage(final Bitmap image) {
+        Log.i("[RCF]", "Set image");
+        currentMode = MODE_IMAGE;
+        mousePad.setImageBitmap(image);
         mousePad.postInvalidate();
     }
 
@@ -401,6 +456,7 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
                 listener.start();
 
                 buttonLayoutVisibility(true);
+                selectLayoutVisibility(false);
 
                 return true;
             }
@@ -416,6 +472,7 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
                 provider.start();
 
                 buttonLayoutVisibility(false);
+                selectLayoutVisibility(true);
 
                 return true;
             }
@@ -512,11 +569,14 @@ public class RemoteControlFragment extends Fragment implements View.OnTouchListe
             Toast.makeText(context, isConnected ? "Connected to server!" : "Error while connecting", Toast.LENGTH_LONG).show();
             try {
                 if(isConnected) {
+                    noConnectionText.setVisibility(View.INVISIBLE);
                     out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket
                             .getOutputStream())), true); //create output stream to send data to server
                     in = socket.getInputStream();
                 }
-            } catch (IOException e){
+                else
+                    noConnectionText.setVisibility(View.VISIBLE);
+            } catch (IOException e) {
                 Log.e("[RCF]", "Error while creating OutWriter", e);
                 Toast.makeText(context, "Error while connecting", Toast.LENGTH_LONG).show();
             }
